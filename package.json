@@ -1,0 +1,28 @@
+{
+  "name": "laptrinhmang-cuoiky",
+  "version": "1.0.0",
+  "description": "MessZola realtime chat app (LiteTalk) with Node.js backend and web frontend",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "sql.js": "^1.13.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
