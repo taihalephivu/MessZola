@@ -13,6 +13,7 @@ export class AppShell {
     this.settingsPanel = settingsPanel;
     this.mount.innerHTML = this.getTemplate();
     this.sidebarContent = this.mount.querySelector('[data-sidebar-content]');
+    this.sidebarTitle = this.mount.querySelector('[data-sidebar-title]');
     this.navButtons = this.mount.querySelectorAll('.nav-btn[data-view]');
     this.userAvatar = this.mount.querySelector('[data-user-avatar]');
     this.userDropdown = this.mount.querySelector('[data-user-dropdown]');
@@ -83,14 +84,10 @@ export class AppShell {
     // Update active view buttons
     this.navButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.view === state.view));
     
-    // Show/hide sidebar based on view
+    // Always show sidebar and render appropriate content
     const sidebar = this.mount.querySelector('.sidebar');
-    if (state.view === 'chat' || state.view === 'groups') {
-      sidebar.style.display = 'flex';
-      this.renderSidebar(state);
-    } else {
-      sidebar.style.display = 'none';
-    }
+    sidebar.style.display = 'flex';
+    this.renderSidebar(state);
     
     // Toggle content slots
     Object.keys(this.slots).forEach(key => {
@@ -101,12 +98,23 @@ export class AppShell {
   renderSidebar(state) {
     const view = state.view;
     
-    if (view === 'chat') {
+    if (view === 'chat' || view === 'friends') {
+      // Show friends list for chat and friends view
+      this.sidebarTitle.innerHTML = '<h3>Bạn bè</h3>';
       this.renderFriendsList(state);
     } else if (view === 'groups') {
+      // Show groups list for groups view
+      this.sidebarTitle.innerHTML = '<h3>Nhóm</h3>';
       this.renderGroupsList(state);
+    } else if (view === 'profile') {
+      // Show profile menu for profile view
+      this.sidebarTitle.innerHTML = '<h3>Trang cá nhân</h3>';
+      this.renderProfileMenu(state);
+    } else if (view === 'settings') {
+      // Show settings menu for settings view
+      this.sidebarTitle.innerHTML = '<h3>Cài đặt</h3>';
+      this.renderSettingsMenu(state);
     } else {
-      // Hide sidebar for other views
       this.sidebarContent.innerHTML = '';
     }
   }
@@ -128,8 +136,14 @@ export class AppShell {
       const isOnline = Math.random() > 0.5; // Mock online status - replace with real data
       const name = friend.display_name || friend.displayName || friend.phone;
       
+      // Find if there's an existing direct room with this friend
+      const directRoom = state.rooms ? state.rooms.find(r => 
+        !r.is_group && r.members && r.members.includes(friend.id)
+      ) : null;
+      const isActive = directRoom && state.currentRoomId === directRoom.id;
+      
       return `
-        <div class="sidebar-item" data-friend-id="${friend.id}">
+        <div class="sidebar-item ${isActive ? 'active' : ''}" data-friend-id="${friend.id}">
           <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${initial}</div>
           <div class="sidebar-info">
             <strong>${this.escape(name)}</strong>
@@ -142,7 +156,9 @@ export class AppShell {
     
     this.sidebarContent.innerHTML = items.join('');
     this.sidebarContent.querySelectorAll('[data-friend-id]').forEach((el) => {
-      el.addEventListener('click', () => this.onStartDirect(el.dataset.friendId));
+      el.addEventListener('click', () => {
+        this.onStartDirect(el.dataset.friendId);
+      });
     });
   }
 
@@ -196,8 +212,79 @@ export class AppShell {
     return div.innerHTML;
   }
 
+  renderProfileMenu(state) {
+    const user = state.user;
+    if (!user) return;
+    
+    const initial = (user.displayName || user.phone || 'U').charAt(0).toUpperCase();
+    const name = user.displayName || user.phone || 'Người dùng';
+    
+    this.sidebarContent.innerHTML = `
+      <div class="sidebar-profile-card">
+        <div class="profile-card-avatar">${initial}</div>
+        <div class="profile-card-info">
+          <strong>${this.escape(name)}</strong>
+          <small>${this.escape(user.phone || '')}</small>
+        </div>
+      </div>
+      <div class="sidebar-menu-list">
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">👤</span>
+          <span>Thông tin cá nhân</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🔒</span>
+          <span>Quyền riêng tư</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🔔</span>
+          <span>Thông báo</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🎨</span>
+          <span>Giao diện</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderSettingsMenu(state) {
+    this.sidebarContent.innerHTML = `
+      <div class="sidebar-menu-list">
+        <div class="sidebar-menu-item active">
+          <span class="menu-icon">⚙️</span>
+          <span>Cài đặt chung</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🔔</span>
+          <span>Thông báo</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🎨</span>
+          <span>Giao diện</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🔒</span>
+          <span>Quyền riêng tư</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">🌐</span>
+          <span>Ngôn ngữ</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">💾</span>
+          <span>Dữ liệu và bộ nhớ</span>
+        </div>
+        <div class="sidebar-menu-item">
+          <span class="menu-icon">ℹ️</span>
+          <span>Về MessZola</span>
+        </div>
+      </div>
+    `;
+  }
+
   filterSidebar(query) {
-    const items = this.sidebarContent.querySelectorAll('.sidebar-item');
+    const items = this.sidebarContent.querySelectorAll('.sidebar-item, .sidebar-menu-item');
     const lowerQuery = query.toLowerCase();
     
     items.forEach(item => {
@@ -257,6 +344,9 @@ export class AppShell {
 
         <!-- Sidebar -->
         <aside class="sidebar">
+          <div class="sidebar-header-title" data-sidebar-title>
+            <h3>Bạn bè</h3>
+          </div>
           <div class="sidebar-search">
             <input type="text" placeholder="Tìm kiếm..." data-search-input />
           </div>

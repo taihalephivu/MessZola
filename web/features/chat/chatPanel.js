@@ -13,10 +13,12 @@ export class ChatPanel {
     this.messageForm = this.root.querySelector('[data-message-form]');
     this.messageInput = this.root.querySelector('[data-message-input]');
     this.typingEl = this.root.querySelector('[data-typing]');
-    this.roomTitle = this.root.querySelector('[data-room-title]');
-    this.loadBtn = this.root.querySelector('[data-load-more]');
     this.fileInput = this.root.querySelector('[data-file-input]');
     this.callButton = this.root.querySelector('[data-call]');
+    this.infoButton = this.root.querySelector('[data-info]');
+    this.chatName = this.root.querySelector('[data-chat-name]');
+    this.chatStatus = this.root.querySelector('[data-chat-status]');
+    this.chatAvatar = this.root.querySelector('[data-chat-avatar]');
     this.typingTimer = null;
     this.bindEvents();
     this.unsubscribe = this.store.subscribe((state) => this.render(state));
@@ -41,10 +43,13 @@ export class ChatPanel {
       this.typingTimer = setTimeout(() => this.wsClient.sendTyping(currentRoomId, false), 2000);
     });
 
-    this.loadBtn.addEventListener('click', () => {
-      const { currentRoomId } = this.store.getState();
-      if (currentRoomId) {
-        this.loadOlder(currentRoomId);
+    // Scroll to load more
+    this.messageList.addEventListener('scroll', () => {
+      if (this.messageList.scrollTop === 0) {
+        const { currentRoomId } = this.store.getState();
+        if (currentRoomId && this.cursors[currentRoomId]) {
+          this.loadOlder(currentRoomId);
+        }
       }
     });
 
@@ -68,6 +73,14 @@ export class ChatPanel {
       const { currentRoomId } = this.store.getState();
       if (currentRoomId) {
         this.callModal.open(currentRoomId);
+      }
+    });
+
+    this.infoButton.addEventListener('click', () => {
+      const { currentRoomId } = this.store.getState();
+      if (currentRoomId) {
+        // TODO: Show room info modal or panel
+        alert('Tính năng chi tiết đang được phát triển');
       }
     });
   }
@@ -96,8 +109,6 @@ export class ChatPanel {
     if (older.length) {
       this.cursors[roomId] = older[0].createdAt;
       this.store.prependMessages(roomId, older);
-    } else {
-      this.loadBtn.disabled = true;
     }
   }
 
@@ -107,41 +118,140 @@ export class ChatPanel {
       return;
     }
     this.root.style.display = 'flex';
+    
     const room = state.rooms.find((r) => r.id === state.currentRoomId);
     if (room) {
-      this.roomTitle.textContent = room.name;
+      // Update header with room info
+      this.chatName.textContent = room.name;
+      const initial = room.name.charAt(0).toUpperCase();
+      this.chatAvatar.textContent = initial;
+      
+      if (room.is_group) {
+        const members = room.members ? room.members.split(',').length : 0;
+        this.chatStatus.textContent = `${members} thành viên`;
+      } else {
+        // For direct chat, show online status (mock for now)
+        const isOnline = Math.random() > 0.5;
+        this.chatStatus.textContent = isOnline ? 'Đang hoạt động' : 'Ngoại tuyến';
+      }
+      
       this.ensureHistory(room.id);
     } else {
-      this.roomTitle.textContent = 'Chọn một cuộc trò chuyện';
+      // No room selected
+      this.chatName.textContent = 'Chọn một cuộc trò chuyện';
+      this.chatStatus.textContent = 'Chọn từ danh sách bên trái';
+      this.chatAvatar.textContent = '💬';
     }
+    
     const messages = state.messages[state.currentRoomId] || [];
     this.renderMessages(messages, state.user?.id);
-    this.loadBtn.disabled = !(this.cursors[state.currentRoomId]);
+    
     const typers = state.typing[state.currentRoomId] || [];
-    this.typingEl.textContent = typers.length ? 'Đang nhập...' : '';
+    this.typingEl.style.display = typers.length ? 'flex' : 'none';
   }
 
   renderMessages(messages, userId) {
+    if (!messages.length) {
+      this.messageList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h3>Chưa có tin nhắn</h3>
+          <p>Bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn đầu tiên</p>
+        </div>
+      `;
+      return;
+    }
+    
     const maxRender = 200;
     const slice = messages.length > maxRender ? messages.slice(messages.length - maxRender) : messages;
-    this.messageList.innerHTML = slice
-      .map((msg) => this.renderMessage(msg, userId))
+    
+    // Group messages by sender
+    const grouped = [];
+    let currentGroup = null;
+    
+    slice.forEach((msg) => {
+      if (!currentGroup || currentGroup.senderId !== msg.senderId) {
+        currentGroup = {
+          senderId: msg.senderId,
+          senderName: msg.senderName || 'User',
+          messages: []
+        };
+        grouped.push(currentGroup);
+      }
+      currentGroup.messages.push(msg);
+    });
+    
+    this.messageList.innerHTML = grouped
+      .map((group) => this.renderMessageGroup(group, userId))
       .join('');
     this.scrollToBottom();
   }
 
-  renderMessage(message, userId) {
-    const isMe = message.senderId === userId;
-    const filesMarkup = (message.files || [])
-      .map((file) => `<a class="file-pill" href="${file.url}" target="_blank">${this.escape(file.name)} (${Math.round(file.size / 1024)} KB)</a>`)
-      .join('');
+  renderMessageGroup(group, userId) {
+    const isMe = group.senderId === userId;
+    
+    // Get proper display name and initial
+    let displayName = group.senderName || 'User';
+    let initial = displayName.charAt(0).toUpperCase();
+    
+    // If it's the current user, use "You" or their name
+    if (isMe) {
+      const state = this.store.getState();
+      if (state.user) {
+        displayName = state.user.displayName || state.user.phone || 'Bạn';
+        initial = displayName.charAt(0).toUpperCase();
+      }
+    }
+    
+    // Generate color based on senderId for consistent avatar colors
+    const avatarColor = this.getAvatarColor(group.senderId);
+    
+    const messagesHtml = group.messages.map(msg => {
+      const filesMarkup = (msg.files || [])
+        .map((file) => `<a class="file-pill" href="${file.url}" target="_blank">${this.escape(file.name)} (${Math.round(file.size / 1024)} KB)</a>`)
+        .join('');
+      const time = new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="message ${isMe ? 'me' : ''}">
+          ${this.escape(msg.content || '')}
+          ${filesMarkup}
+          <small>${time}</small>
+        </div>
+      `;
+    }).join('');
+    
     return `
-      <div class="message ${isMe ? 'me' : ''}">
-        <div class="text">${this.escape(message.content || '')}</div>
-        ${filesMarkup}
-        <small>${new Date(message.createdAt).toLocaleTimeString()}</small>
+      <div class="message-group ${isMe ? 'me' : ''}">
+        <div class="message-avatar" style="background: ${avatarColor};">${initial}</div>
+        <div class="message-content">
+          ${!isMe ? `<div class="message-sender">${this.escape(displayName)}</div>` : ''}
+          ${messagesHtml}
+        </div>
       </div>
     `;
+  }
+
+  getAvatarColor(userId) {
+    // Generate consistent color based on userId
+    const colors = [
+      'linear-gradient(135deg, #6D83F2, #8EA3FF)',
+      'linear-gradient(135deg, #F29D52, #FFB87A)',
+      'linear-gradient(135deg, #10B981, #34D399)',
+      'linear-gradient(135deg, #8B5CF6, #A78BFA)',
+      'linear-gradient(135deg, #EF4444, #F87171)',
+      'linear-gradient(135deg, #06B6D4, #22D3EE)',
+      'linear-gradient(135deg, #F59E0B, #FBBF24)',
+      'linear-gradient(135deg, #EC4899, #F472B6)'
+    ];
+    
+    // Simple hash function to get consistent color for same userId
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
   }
 
   scrollToBottom() {
@@ -152,24 +262,46 @@ export class ChatPanel {
 
   getTemplate() {
     return `
-      <header class="chat-header" style="padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <h3 data-room-title>MessZola</h3>
-          <small data-typing></small>
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-header-avatar" data-chat-avatar>💬</div>
+          <div class="chat-header-details">
+            <h3 data-chat-name>Chọn một cuộc trò chuyện</h3>
+            <p data-chat-status>Chọn từ danh sách bên trái</p>
+          </div>
         </div>
-        <div style="display:flex;gap:0.5rem;">
-          <button type="button" data-call>Gọi video</button>
-          <button type="button" data-load-more style="background:rgba(109,131,242,0.2);color:var(--color-primary);">Tải thêm</button>
+        <div class="chat-header-actions">
+          <button type="button" data-call class="icon-btn" title="Gọi video">📹</button>
+          <button type="button" data-info class="icon-btn" title="Chi tiết">ℹ️</button>
         </div>
-      </header>
-      <div class="message-list" data-message-list></div>
+      </div>
+      <div class="message-list" data-message-list>
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h3>Chưa có tin nhắn</h3>
+          <p>Bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn đầu tiên</p>
+        </div>
+      </div>
+      <div class="typing-indicator" data-typing style="display:none;">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <span>Đang nhập...</span>
+      </div>
       <form class="chat-input" data-message-form>
-        <input data-message-input placeholder="Nhập tin nhắn..." />
-        <label style="display:flex;align-items:center;justify-content:center;background:rgba(31,41,55,0.08);border-radius:var(--radius-xl);cursor:pointer;">
-          📎
-          <input type="file" data-file-input style="display:none;" />
-        </label>
-        <button type="submit">Gửi</button>
+        <div class="chat-input-wrapper">
+          <div class="chat-input-actions">
+            <button type="button" title="Emoji">😊</button>
+            <label title="Đính kèm file">
+              📎
+              <input type="file" data-file-input style="display:none;" />
+            </label>
+          </div>
+          <input data-message-input placeholder="Nhập tin nhắn..." />
+        </div>
+        <button type="submit" class="send-btn" title="Gửi">➤</button>
       </form>
     `;
   }

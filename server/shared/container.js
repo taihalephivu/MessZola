@@ -36,7 +36,7 @@ const services = {
   userService: new UserService({ userRepository: repositories.userRepository }),
   friendService: new FriendService({ friendshipRepository: repositories.friendshipRepository, userRepository: repositories.userRepository }),
   roomService: new RoomService({ roomRepository: repositories.roomRepository, userRepository: repositories.userRepository }),
-  chatService: new ChatService({ messageRepository: repositories.messageRepository, fileRepository: repositories.fileRepository, roomService: null }),
+  chatService: new ChatService({ messageRepository: repositories.messageRepository, fileRepository: repositories.fileRepository, roomService: null, userRepository: repositories.userRepository }),
   fileService: new FileService({ fileRepository: repositories.fileRepository }),
   callService: null
 };

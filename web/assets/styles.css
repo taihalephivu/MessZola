@@ -610,6 +610,19 @@ select:focus {
   overflow: hidden;
 }
 
+.sidebar-header-title {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--color-surface);
+}
+
+.sidebar-header-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .sidebar-search {
   padding: 1rem;
   background: var(--color-surface);
@@ -763,6 +776,95 @@ select:focus {
   background: #9CA3AF;
 }
 
+/* ===== SIDEBAR PROFILE CARD ===== */
+.sidebar-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(135deg, rgba(109, 131, 242, 0.1), rgba(109, 131, 242, 0.05));
+  border-radius: var(--radius-md);
+  margin: 1rem;
+  border: 1px solid rgba(109, 131, 242, 0.15);
+}
+
+.profile-card-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #8EA3FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(109, 131, 242, 0.3);
+}
+
+.profile-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-card-info strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-card-info small {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+/* ===== SIDEBAR MENU LIST ===== */
+.sidebar-menu-list {
+  padding: 0.5rem;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-menu-item:hover {
+  background: rgba(109, 131, 242, 0.08);
+}
+
+.sidebar-menu-item.active {
+  background: rgba(109, 131, 242, 0.15);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.sidebar-menu-item .menu-icon {
+  font-size: 1.3rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-menu-item span:not(.menu-icon) {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
 .friend-item {
   display: flex;
   align-items: center;
@@ -876,26 +978,116 @@ select:focus {
   background: var(--color-bg);
   overflow: hidden;
   position: relative;
+  height: 100%;
 }
 
-/* When sidebar is hidden, main content takes full width */
-.sidebar[style*="display: none"] ~ .main-content,
-.sidebar:not([style]) ~ .main-content {
-  grid-column: 1 / -1;
+.main-content > div {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ===== CHAT PANEL ===== */
 .chat-panel {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
   overflow: hidden;
+  position: relative;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-header-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #8EA3FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.chat-header-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-header-details h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-header-details p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  padding: 0;
+  transition: all 0.2s;
+  box-shadow: none;
+  border: none;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: rgba(109, 131, 242, 0.1);
+  transform: scale(1.1);
 }
 
 .message-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -993,6 +1185,9 @@ select:focus {
   color: var(--color-muted);
   font-size: 0.8rem;
   font-style: italic;
+  background: var(--color-surface);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
 }
 
 .typing-dots {
@@ -1035,6 +1230,8 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 10;
   flex-shrink: 0;
 }
 
@@ -1333,6 +1530,30 @@ select:focus {
   width: auto;
   min-width: 150px;
   padding: 0.5rem 0.75rem;
+}
+
+/* ===== SUCCESS MESSAGE ===== */
+.success-message {
+  background: linear-gradient(135deg, #10B981, #34D399);
+  color: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .profile-panel::-webkit-scrollbar,
@@ -1920,6 +2141,5 @@ select:focus {
   
   .friend-panel [data-friends] {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }nmax(140px, 1fr));
   }
 }

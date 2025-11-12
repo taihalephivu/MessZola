@@ -1,7 +1,8 @@
 export class GroupPanel {
-  constructor({ store, http }) {
+  constructor({ store, http, onSelectRoom }) {
     this.store = store;
     this.http = http;
+    this.onSelectRoom = onSelectRoom;
     this.root = document.createElement('div');
     this.root.className = 'group-panel';
     this.root.innerHTML = this.getTemplate();
@@ -25,15 +26,39 @@ export class GroupPanel {
         return;
       }
       
+      const submitBtn = this.createGroupForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang tạo...';
+      
       try {
-        await this.http.post('/rooms', { name, memberIds, isGroup: true });
+        await this.http.post('/rooms/group', { name, memberIds });
         this.groupNameInput.value = '';
         checkboxes.forEach(cb => cb.checked = false);
-        alert('Tạo nhóm thành công!');
+        // Reload rooms list
+        const rooms = await this.http.get('/rooms');
+        this.store.setRooms(this.formatRooms(rooms));
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.className = 'success-message';
+        successMsg.textContent = '✓ Tạo nhóm thành công!';
+        this.createGroupForm.insertAdjacentElement('afterend', successMsg);
+        setTimeout(() => successMsg.remove(), 3000);
       } catch (err) {
         alert(err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
     });
+  }
+
+  formatRooms(rooms) {
+    return rooms.map((room) => ({
+      ...room,
+      members: room.members || '',
+      is_group: Number(room.is_group)
+    }));
   }
 
   mount(container) {
@@ -92,7 +117,7 @@ export class GroupPanel {
       const initial = group.name.charAt(0).toUpperCase();
       
       return `
-        <div class="group-card">
+        <div class="group-card" data-group-id="${group.id}">
           <div class="group-avatar">${initial}</div>
           <div class="group-info">
             <strong>${this.escape(group.name)}</strong>
@@ -101,6 +126,17 @@ export class GroupPanel {
         </div>
       `;
     }).join('');
+    
+    // Add click handlers
+    this.groupsList.querySelectorAll('[data-group-id]').forEach(card => {
+      card.addEventListener('click', () => {
+        const groupId = card.dataset.groupId;
+        if (this.onSelectRoom) {
+          this.onSelectRoom(groupId);
+          this.store.setView('chat');
+        }
+      });
+    });
   }
 
   escape(text) {

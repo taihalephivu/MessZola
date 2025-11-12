@@ -63,7 +63,7 @@ async function startApp() {
     chatPanel = new ChatPanel({ store, http, wsClient, callModal });
     friendPanel = new FriendPanel({ store, http });
     profilePanel = new ProfilePanel({ store, http });
-    groupPanel = new GroupPanel({ store, http });
+    groupPanel = new GroupPanel({ store, http, onSelectRoom: selectRoom });
     settingsPanel = new SettingsPanel({ store });
   }
   if (shell) {
@@ -118,6 +118,7 @@ async function startDirectRoom(peerId) {
     const rooms = await http.get('/rooms');
     store.setRooms(formatRooms(rooms));
     store.setCurrentRoom(room.id);
+    store.setView('chat');
   } catch (err) {
     alert(err.message);
   }
