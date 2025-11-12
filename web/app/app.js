@@ -9,6 +9,7 @@ import { FriendPanel } from '../features/friends/friendPanel.js';
 import { AppShell } from './shell.js';
 import { CallModal } from '../features/call/callModal.js';
 import { GroupPanel } from '../features/groups/groupPanel.js';
+import { SettingsPanel } from '../features/settings/settingsPanel.js';
 
 const appMount = document.getElementById('app');
 const callRoot = document.getElementById('call-root');
@@ -25,6 +26,7 @@ let chatPanel;
 let friendPanel;
 let profilePanel;
 let groupPanel;
+let settingsPanel;
 
 async function bootstrap() {
   const token = localStorage.getItem('messzola_token');
@@ -61,7 +63,8 @@ async function startApp() {
     chatPanel = new ChatPanel({ store, http, wsClient, callModal });
     friendPanel = new FriendPanel({ store, http });
     profilePanel = new ProfilePanel({ store, http });
-    groupPanel = new GroupPanel({ store, onSelectRoom: selectRoom });
+    groupPanel = new GroupPanel({ store, http });
+    settingsPanel = new SettingsPanel({ store });
   }
   if (shell) {
     shell.destroy();
@@ -76,7 +79,8 @@ async function startApp() {
     chatPanel,
     friendPanel,
     profilePanel,
-    groupPanel
+    groupPanel,
+    settingsPanel
   });
   wsClient.connect(store.getState().token);
   await loadInitialData();

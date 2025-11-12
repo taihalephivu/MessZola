@@ -1,4 +1,4 @@
-﻿# MessZola (LiteChat)
+﻿# MessZola (LiteTalk)
 
 MessZola là ứng dụng trò chuyện thời gian thực gồm backend Node.js (Express + WebSocket) và frontend web HTML/CSS/JS với phong cách Flat + Soft UI. Dự án lưu trữ dữ liệu bằng sql.js (SQLite in-memory + file persistence) và triển khai WebRTC để gọi video nhiều người.
 
