@@ -15,6 +15,11 @@ export class RtcClient {
     this.listeners = new Set();
     this.micEnabled = true;
     this.camEnabled = true;
+    this.onIncomingCall = null;
+  }
+  
+  setIncomingCallHandler(handler) {
+    this.onIncomingCall = handler;
   }
 
   onUpdate(listener) {
@@ -30,11 +35,21 @@ export class RtcClient {
     this.listeners.forEach((listener) => listener(payload));
   }
 
-  async start(roomId) {
+  async start(roomId, isAnswering = false) {
     this.roomId = roomId;
     const stream = await this.ensureLocalStream();
     this.store.setCallState({ activeRoomId: roomId });
+    
+    // Only send call notification if starting a new call (not answering)
+    if (!isAnswering) {
+      const state = this.store.getState();
+      const callerName = state.user?.displayName || state.user?.phone || 'Người dùng';
+      this.wsClient.sendRtc({ t: 'rtc-call-start', roomId, callerName });
+    }
+    
+    // Then join room
     this.wsClient.sendRtc({ t: 'rtc-join', roomId });
+    
     return stream;
   }
 
@@ -65,6 +80,11 @@ export class RtcClient {
 
   handleSignal(event) {
     switch (event.t) {
+      case 'rtc-call-incoming':
+        if (this.onIncomingCall) {
+          this.onIncomingCall(event.roomId, event.from, event.callerName);
+        }
+        break;
       case 'rtc-peers':
         this.store.setCallState({ peers: event.peers });
         event.peers.forEach((peerId) => this.createPeer(peerId, true));

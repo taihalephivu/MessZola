@@ -10,15 +10,38 @@ import { AppShell } from './shell.js';
 import { CallModal } from '../features/call/callModal.js';
 import { GroupPanel } from '../features/groups/groupPanel.js';
 import { SettingsPanel } from '../features/settings/settingsPanel.js';
+import { IncomingCallNotification } from '../features/call/incomingCallNotification.js';
 
 const appMount = document.getElementById('app');
 const callRoot = document.getElementById('call-root');
+const incomingCallRoot = document.getElementById('incoming-call-root');
 
 const store = new Store();
 const http = new HttpClient('/api');
 const wsClient = new WsClient({ store });
 const rtcClient = new RtcClient({ store, wsClient });
 const callModal = new CallModal({ mount: callRoot, rtcClient, store });
+const incomingCallNotification = new IncomingCallNotification({
+  mount: incomingCallRoot,
+  store,
+  onAccept: async (roomId) => {
+    await callModal.open(roomId, true); // true = answering call
+  },
+  onDecline: (roomId) => {
+    wsClient.sendRtc({ t: 'rtc-call-decline', roomId });
+  }
+});
+
+// Set incoming call handler
+rtcClient.setIncomingCallHandler((roomId, callerId, callerName) => {
+  const state = store.getState();
+  const friend = state.friends?.find(f => f.id === callerId);
+  const name = friend ? (friend.display_name || friend.displayName || friend.phone) : callerName;
+  const avatar = friend ? (friend.avatar_url || friend.avatarUrl) : null;
+  
+  incomingCallNotification.show(roomId, name, avatar);
+});
+
 wsClient.setRtcHandler((event) => rtcClient.handleSignal(event));
 
 let shell = null;

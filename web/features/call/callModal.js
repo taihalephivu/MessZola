@@ -41,12 +41,12 @@ export class CallModal {
     this.unsubscribe = this.rtcClient.onUpdate((payload) => this.renderStreams(payload));
   }
 
-  async open(roomId) {
+  async open(roomId, isAnswering = false) {
     if (!this.overlay) {
       this.init();
     }
     this.overlay.classList.add('active');
-    const stream = await this.rtcClient.start(roomId);
+    const stream = await this.rtcClient.start(roomId, isAnswering);
     this.attachLocalStream(stream);
   }
 

@@ -81,6 +81,8 @@ export class WsClient {
         case 'typing':
           this.store.setTyping(data.roomId, data.from, data.on);
           break;
+        case 'rtc-call-incoming':
+        case 'rtc-call-declined':
         case 'rtc-peers':
         case 'rtc-joined':
         case 'rtc-left':
