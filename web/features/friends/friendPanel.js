@@ -9,8 +9,6 @@
     this.searchResults = this.root.querySelector('[data-results]');
     this.requestList = this.root.querySelector('[data-request-list]');
     this.friendsList = this.root.querySelector('[data-friends]');
-    this.groupForm = this.root.querySelector('[data-group-form]');
-    this.groupFriends = this.root.querySelector('[data-group-friends]');
     this.bindEvents();
     this.unsubscribe = this.store.subscribe((state) => this.render(state));
   }
@@ -27,27 +25,6 @@
         this.renderResults(results);
       } catch (err) {
         this.searchResults.innerHTML = `<p>${err.message}</p>`;
-      }
-    });
-
-    this.groupForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const formData = new FormData(this.groupForm);
-      const name = formData.get('groupName');
-      const memberIds = Array.from(this.groupFriends.querySelectorAll('input[type="checkbox"]'))
-        .filter((input) => input.checked)
-        .map((input) => input.value);
-      if (!memberIds.length) {
-        alert('Chọn ít nhất một thành viên');
-        return;
-      }
-      try {
-        const room = await this.http.post('/rooms/group', { name, memberIds });
-        const rooms = await this.http.get('/rooms');
-        this.store.setRooms(rooms);
-        alert(`Đã tạo nhóm ${room.name}`);
-      } catch (err) {
-        alert(err.message);
       }
     });
   }
@@ -84,7 +61,6 @@
     this.friendsList.innerHTML = state.friends
       .map((friend) => `<div class="friend-item">${friend.display_name || friend.displayName}</div>`)
       .join('');
-    this.renderGroupOptions(state.friends);
   }
 
   async reloadData() {
@@ -122,17 +98,6 @@
     });
   }
 
-  renderGroupOptions(friends) {
-    this.groupFriends.innerHTML = friends
-      .map((friend) => `
-        <label style="display:flex;align-items:center;gap:0.5rem;">
-          <input type="checkbox" value="${friend.id || friend.user_id}" />
-          <span>${friend.display_name || friend.displayName || friend.phone}</span>
-        </label>
-      `)
-      .join('');
-  }
-
   getTemplate() {
     return `
       <section>
@@ -143,12 +108,6 @@
         <div class="friend-requests" data-request-list></div>
         <h3>Bạn bè</h3>
         <div data-friends></div>
-        <h3>Tạo nhóm</h3>
-        <form data-group-form>
-          <input name="groupName" placeholder="Tên nhóm" required />
-          <div data-group-friends style="display:grid;gap:0.5rem;margin:0.5rem 0;"></div>
-          <button type="submit">Tạo nhóm</button>
-        </form>
       </section>
     `;
   }
