@@ -211,22 +211,37 @@ export class ChatPanel {
 
   renderMessageGroup(group, userId) {
     const isMe = group.senderId === userId;
+    const state = this.store.getState();
     
-    // Get proper display name and initial
+    // Get proper display name, initial, and avatar
     let displayName = group.senderName || 'User';
     let initial = displayName.charAt(0).toUpperCase();
+    let avatarUrl = null;
     
-    // If it's the current user, use "You" or their name
+    // If it's the current user
     if (isMe) {
-      const state = this.store.getState();
       if (state.user) {
         displayName = state.user.displayName || state.user.phone || 'Bạn';
         initial = displayName.charAt(0).toUpperCase();
+        avatarUrl = state.user.avatarUrl || state.user.avatar_url;
+      }
+    } else {
+      // If it's a friend, get their avatar
+      const friend = state.friends?.find(f => f.id === group.senderId);
+      if (friend) {
+        displayName = friend.display_name || friend.displayName || friend.phone;
+        initial = displayName.charAt(0).toUpperCase();
+        avatarUrl = friend.avatar_url || friend.avatarUrl;
       }
     }
     
     // Generate color based on senderId for consistent avatar colors
     const avatarColor = this.getAvatarColor(group.senderId);
+    
+    // Avatar content: image or initial
+    const avatarContent = avatarUrl
+      ? `<img src="${avatarUrl}" alt="${this.escape(displayName)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`
+      : initial;
     
     const messagesHtml = group.messages.map(msg => {
       const filesMarkup = (msg.files || [])
@@ -245,7 +260,7 @@ export class ChatPanel {
     
     return `
       <div class="message-group ${isMe ? 'me' : ''}">
-        <div class="message-avatar" style="background: ${avatarColor};">${initial}</div>
+        <div class="message-avatar" style="background: ${avatarColor};">${avatarContent}</div>
         <div class="message-content">
           ${!isMe ? `<div class="message-sender">${this.escape(displayName)}</div>` : ''}
           ${messagesHtml}
