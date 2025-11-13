@@ -100,15 +100,27 @@
 
   getTemplate() {
     return `
-      <section>
-        <h2>Kết bạn</h2>
-        <input data-search placeholder="Tìm bằng tên hoặc số điện thoại" />
-        <div data-results style="margin:1rem 0; display:flex; flex-direction:column; gap:0.5rem;"></div>
-        <h3>Lời mời kết bạn</h3>
-        <div class="friend-requests" data-request-list></div>
-        <h3>Bạn bè</h3>
-        <div data-friends></div>
-      </section>
+      <div class="panel-container">
+        <h2>Bạn bè</h2>
+        
+        <section class="panel-section">
+          <h3>Tìm kiếm bạn bè</h3>
+          <div class="form-field">
+            <input data-search placeholder="Tìm bằng tên hoặc số điện thoại" />
+          </div>
+          <div data-results style="margin:1rem 0; display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </section>
+        
+        <section class="panel-section">
+          <h3>Lời mời kết bạn</h3>
+          <div class="friend-requests" data-request-list></div>
+        </section>
+        
+        <section class="panel-section">
+          <h3>Danh sách bạn bè</h3>
+          <div data-friends></div>
+        </section>
+      </div>
     `;
   }
 }

@@ -44,7 +44,7 @@ function renderHeader() {
       <div class="inner">
         <div class="brand-mark">
           <img src="./assets/logo.png" alt="MessZola Logo" width="40" height="40" loading="lazy" />
-          <img src="./assets/logo1.png" alt="MessZola Logo" width="105" height="30" loading="lazy" />
+          <img src="./assets/logo1.png" alt="MessZola Logo" width="130" height="30" loading="lazy" />
         </div>
         <nav class="landing-nav" aria-label="Primary">
           ${['Sản phẩm', 'Tính năng', 'Pricing'].map((item, idx) => `

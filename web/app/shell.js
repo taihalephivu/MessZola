@@ -78,7 +78,14 @@ export class AppShell {
     // Update user avatar
     if (state.user) {
       const initial = (state.user.displayName || state.user.phone || 'U').charAt(0).toUpperCase();
-      this.userAvatar.textContent = initial;
+      
+      if (state.user.avatarUrl) {
+        // Show image avatar
+        this.userAvatar.innerHTML = `<img src="${state.user.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+      } else {
+        // Show initial avatar
+        this.userAvatar.textContent = initial;
+      }
     }
     
     // Update active view buttons
@@ -294,20 +301,7 @@ export class AppShell {
   }
 
   renderProfileMenu(state) {
-    const user = state.user;
-    if (!user) return;
-    
-    const initial = (user.displayName || user.phone || 'U').charAt(0).toUpperCase();
-    const name = user.displayName || user.phone || 'Người dùng';
-    
     this.sidebarContent.innerHTML = `
-      <div class="sidebar-profile-card">
-        <div class="profile-card-avatar">${initial}</div>
-        <div class="profile-card-info">
-          <strong>${this.escape(name)}</strong>
-          <small>${this.escape(user.phone || '')}</small>
-        </div>
-      </div>
       <div class="sidebar-menu-list">
         <div class="sidebar-menu-item">
           <span class="menu-icon">👤</span>
@@ -386,7 +380,8 @@ export class AppShell {
         <!-- Header -->
         <header class="app-main-header">
           <div class="header-left">
-            <img src="./assets/logo.png" alt="MessZola" class="header-logo" />
+            <img src="./assets/logo.png" alt="MessZola Logo" width="40" height="40" loading="lazy" />
+          <img src="./assets/logo1.png" alt="MessZola Logo" width="130" height="30" loading="lazy" />
           </div>
           <nav class="header-nav">
             <button data-view="chat" class="nav-btn active">

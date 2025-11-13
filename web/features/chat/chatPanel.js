@@ -124,7 +124,24 @@ export class ChatPanel {
       // Update header with room info
       this.chatName.textContent = room.name;
       const initial = room.name.charAt(0).toUpperCase();
-      this.chatAvatar.textContent = initial;
+      
+      // Get friend info for direct chat to show avatar
+      let friendAvatar = null;
+      if (!room.is_group && room.members) {
+        const memberIds = room.members.split(',');
+        const friendId = memberIds.find(id => id !== state.user?.id);
+        const friend = state.friends?.find(f => f.id === friendId);
+        if (friend && friend.avatarUrl) {
+          friendAvatar = friend.avatarUrl;
+        }
+      }
+      
+      // Update avatar
+      if (friendAvatar) {
+        this.chatAvatar.innerHTML = `<img src="${friendAvatar}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+      } else {
+        this.chatAvatar.textContent = initial;
+      }
       
       if (room.is_group) {
         const members = room.members ? room.members.split(',').length : 0;
