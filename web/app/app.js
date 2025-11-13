@@ -95,7 +95,14 @@ async function loadInitialData() {
   store.setFriends(friends);
   store.setFriendRequests(requests);
   store.setRooms(formatRooms(rooms));
-  if (!store.getState().currentRoomId && rooms.length) {
+  
+  // Restore last room from localStorage
+  const lastRoomId = localStorage.getItem('messzola_last_room');
+  if (lastRoomId && rooms.find(r => r.id === lastRoomId)) {
+    // Room still exists, restore it
+    store.setCurrentRoom(lastRoomId);
+  } else if (!store.getState().currentRoomId && rooms.length) {
+    // No saved room or room doesn't exist, use first room
     store.setCurrentRoom(rooms[0].id);
   }
 }
@@ -110,6 +117,8 @@ function formatRooms(rooms) {
 
 async function selectRoom(roomId) {
   store.setCurrentRoom(roomId);
+  // Save to localStorage
+  localStorage.setItem('messzola_last_room', roomId);
 }
 
 async function startDirectRoom(peerId) {
@@ -119,6 +128,8 @@ async function startDirectRoom(peerId) {
     store.setRooms(formatRooms(rooms));
     store.setCurrentRoom(room.id);
     store.setView('chat');
+    // Save to localStorage
+    localStorage.setItem('messzola_last_room', room.id);
   } catch (err) {
     alert(err.message);
   }
@@ -128,6 +139,7 @@ async function handleLogout() {
   await rtcClient.stop();
   wsClient.disconnect();
   localStorage.removeItem('messzola_token');
+  localStorage.removeItem('messzola_last_room');
   store.setState({ token: null, user: null, rooms: [], friends: [], currentRoomId: null, messages: {}, view: 'chat' });
   if (shell) {
     shell.destroy();

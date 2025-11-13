@@ -663,6 +663,15 @@ select:focus {
   border-radius: 10px;
 }
 
+.sidebar-section-title {
+  padding: 1rem 1rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -2230,8 +2239,17 @@ select:focus {
 }
 
 /* Adjust grid for different number of participants */
+/* When only 1 person (waiting for others) - show smaller centered video */
 .video-grid:has(.video-container:nth-child(1):last-child) {
-  grid-template-columns: 1fr;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-grid:has(.video-container:nth-child(1):last-child) .video-container {
+  max-width: 480px;
+  max-height: 360px;
+  width: 100%;
 }
 
 .video-grid:has(.video-container:nth-child(2):last-child) {

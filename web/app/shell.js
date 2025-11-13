@@ -98,12 +98,16 @@ export class AppShell {
   renderSidebar(state) {
     const view = state.view;
     
-    if (view === 'chat' || view === 'friends') {
-      // Show friends list for chat and friends view
+    if (view === 'chat') {
+      // Show both friends and groups for chat view
+      this.sidebarTitle.innerHTML = '<h3>Trò chuyện</h3>';
+      this.renderCombinedList(state);
+    } else if (view === 'friends') {
+      // Show only friends for friends view
       this.sidebarTitle.innerHTML = '<h3>Bạn bè</h3>';
       this.renderFriendsList(state);
     } else if (view === 'groups') {
-      // Show groups list for groups view
+      // Show only groups for groups view
       this.sidebarTitle.innerHTML = '<h3>Nhóm</h3>';
       this.renderGroupsList(state);
     } else if (view === 'profile') {
@@ -117,6 +121,83 @@ export class AppShell {
     } else {
       this.sidebarContent.innerHTML = '';
     }
+  }
+
+  renderCombinedList(state) {
+    let html = '';
+    
+    // Add friends section
+    if (state.friends && state.friends.length > 0) {
+      html += '<div class="sidebar-section-title">Bạn bè</div>';
+      
+      state.friends.forEach((friend) => {
+        const initial = (friend.display_name || friend.displayName || friend.phone || 'U').charAt(0).toUpperCase();
+        const isOnline = Math.random() > 0.5;
+        const name = friend.display_name || friend.displayName || friend.phone;
+        
+        const directRoom = state.rooms ? state.rooms.find(r => 
+          !r.is_group && r.members && r.members.includes(friend.id)
+        ) : null;
+        const isActive = directRoom && state.currentRoomId === directRoom.id;
+        
+        html += `
+          <div class="sidebar-item ${isActive ? 'active' : ''}" data-friend-id="${friend.id}">
+            <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${initial}</div>
+            <div class="sidebar-info">
+              <strong>${this.escape(name)}</strong>
+              <small class="status-text">${isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</small>
+            </div>
+            <div class="online-indicator ${isOnline ? 'online' : 'offline'}"></div>
+          </div>
+        `;
+      });
+    }
+    
+    // Add groups section
+    const groups = state.rooms ? state.rooms.filter(r => r.is_group) : [];
+    if (groups.length > 0) {
+      html += '<div class="sidebar-section-title">Nhóm</div>';
+      
+      groups.forEach((group) => {
+        const initial = group.name.charAt(0).toUpperCase();
+        const members = group.members ? group.members.split(',').length : 0;
+        const lastMessage = this.getLastMessage(state, group.id);
+        const isActive = state.currentRoomId === group.id;
+        
+        html += `
+          <div class="sidebar-item ${isActive ? 'active' : ''}" data-room-id="${group.id}">
+            <div class="sidebar-avatar group">${initial}</div>
+            <div class="sidebar-info">
+              <strong>${this.escape(group.name)}</strong>
+              <small>${lastMessage || `${members} thành viên`}</small>
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    if (!html) {
+      html = `
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h3>Chưa có cuộc trò chuyện</h3>
+          <p>Thêm bạn bè hoặc tạo nhóm để bắt đầu</p>
+        </div>
+      `;
+    }
+    
+    this.sidebarContent.innerHTML = html;
+    
+    // Add event listeners
+    this.sidebarContent.querySelectorAll('[data-friend-id]').forEach((el) => {
+      el.addEventListener('click', () => {
+        this.onStartDirect(el.dataset.friendId);
+      });
+    });
+    
+    this.sidebarContent.querySelectorAll('[data-room-id]').forEach((el) => {
+      el.addEventListener('click', () => this.onSelectRoom(el.dataset.roomId));
+    });
   }
 
   renderFriendsList(state) {
