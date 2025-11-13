@@ -2143,3 +2143,296 @@ select:focus {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
+
+
+/* ===== CALL MODAL (Google Meet Style) ===== */
+.call-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.call-overlay.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.call-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.video-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-auto-rows: minmax(240px, 1fr);
+  gap: 1rem;
+  padding: 2rem;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.video-container {
+  position: relative;
+  background: #1a1a1a;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.video-container:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+.video-label {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.local-video .video-label {
+  background: rgba(26, 115, 232, 0.8);
+}
+
+/* Adjust grid for different number of participants */
+.video-grid:has(.video-container:nth-child(1):last-child) {
+  grid-template-columns: 1fr;
+}
+
+.video-grid:has(.video-container:nth-child(2):last-child) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.video-grid:has(.video-container:nth-child(3):last-child),
+.video-grid:has(.video-container:nth-child(4):last-child) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.video-grid:has(.video-container:nth-child(5):last-child),
+.video-grid:has(.video-container:nth-child(6):last-child) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.call-controls {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(32, 33, 36, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.control-btn-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.control-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.3s ease;
+}
+
+.control-btn:hover::before {
+  transform: scale(1);
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.control-icon {
+  font-size: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mic Button */
+.mic-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mic-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mic-btn.off {
+  background: #EA4335;
+}
+
+.mic-btn.off:hover {
+  background: #D33426;
+}
+
+/* Camera Button */
+.cam-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cam-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.cam-btn.off {
+  background: #EA4335;
+}
+
+.cam-btn.off:hover {
+  background: #D33426;
+}
+
+/* Share Button */
+.share-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.share-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.share-btn.active {
+  background: #1A73E8;
+}
+
+.share-btn.active:hover {
+  background: #1557B0;
+}
+
+/* End Call Button */
+.end-btn {
+  width: 64px;
+  height: 64px;
+  background: #EA4335;
+  margin-left: 0.5rem;
+}
+
+.end-btn:hover {
+  background: #D33426;
+  transform: scale(1.08);
+}
+
+.end-btn .control-icon {
+  font-size: 1.8rem;
+  transform: rotate(135deg);
+}
+
+/* Tooltip on hover */
+.control-btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .call-controls {
+    bottom: 1rem;
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .control-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .control-icon {
+    font-size: 1.3rem;
+  }
+
+  .end-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .end-btn .control-icon {
+    font-size: 1.5rem;
+  }
+
+  .control-btn-group {
+    gap: 0.5rem;
+  }
+}

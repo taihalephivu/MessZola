@@ -18,7 +18,7 @@ const store = new Store();
 const http = new HttpClient('/api');
 const wsClient = new WsClient({ store });
 const rtcClient = new RtcClient({ store, wsClient });
-const callModal = new CallModal({ mount: callRoot, rtcClient });
+const callModal = new CallModal({ mount: callRoot, rtcClient, store });
 wsClient.setRtcHandler((event) => rtcClient.handleSignal(event));
 
 let shell = null;
