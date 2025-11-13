@@ -141,15 +141,21 @@ export class AppShell {
         const initial = (friend.display_name || friend.displayName || friend.phone || 'U').charAt(0).toUpperCase();
         const isOnline = Math.random() > 0.5;
         const name = friend.display_name || friend.displayName || friend.phone;
+        const avatarUrl = friend.avatar_url || friend.avatarUrl;
         
         const directRoom = state.rooms ? state.rooms.find(r => 
           !r.is_group && r.members && r.members.includes(friend.id)
         ) : null;
         const isActive = directRoom && state.currentRoomId === directRoom.id;
         
+        // Avatar content: image or initial
+        const avatarContent = avatarUrl 
+          ? `<img src="${avatarUrl}" alt="${this.escape(name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`
+          : initial;
+        
         html += `
           <div class="sidebar-item ${isActive ? 'active' : ''}" data-friend-id="${friend.id}">
-            <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${initial}</div>
+            <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${avatarContent}</div>
             <div class="sidebar-info">
               <strong>${this.escape(name)}</strong>
               <small class="status-text">${isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</small>
