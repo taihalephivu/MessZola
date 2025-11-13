@@ -1,10 +1,3 @@
-const COUNTRY_CODES = [
-  { code: '+84', label: 'VN' },
-  { code: '+65', label: 'SG' },
-  { code: '+81', label: 'JP' },
-  { code: '+1', label: 'US' }
-];
-
 const FEATURES = [
   { icon: '💬', title: 'Chat realtime', desc: 'Tin nhắn tức thời, đồng bộ đa thiết bị.' },
   { icon: '🎥', title: 'Gọi video nhóm', desc: 'Tối đa 4 người, chia sẻ màn hình, trò chuyện mượt mà.' },
@@ -90,7 +83,6 @@ function renderHeroSection() {
 }
 
 function renderAuthCard() {
-  const codeOptions = COUNTRY_CODES.map((item) => `<option value="${item.code}">${item.code} ${item.label}</option>`).join('');
   return `
     <section class="auth-shell" aria-label="Đăng nhập MessZola" id="auth">
       <div class="auth-tabs" role="tablist">
@@ -100,14 +92,7 @@ function renderAuthCard() {
       <form class="auth-form" id="authForm" novalidate>
         <div class="auth-field">
           <label for="phoneInput">Số điện thoại</label>
-          <div class="auth-field-row">
-            <select name="countryCode" aria-label="Mã quốc gia">
-              ${codeOptions}
-            </select>
-            <div class="input-wrapper">
-              <input id="phoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="912 345 678" required aria-describedby="error-phone" aria-invalid="false" />
-            </div>
-          </div>
+          <input id="phoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0912345678" required aria-describedby="error-phone" aria-invalid="false" />
           <span class="field-error" id="error-phone" aria-live="polite"></span>
         </div>
 
@@ -207,7 +192,6 @@ function collectElements(root) {
     phoneInput: root.querySelector('#phoneInput'),
     passwordInput: root.querySelector('#passwordInput'),
     displayInput: root.querySelector('#displayNameInput'),
-    countrySelect: root.querySelector('select[name="countryCode"]'),
     togglePasswordBtn: root.querySelector('[data-toggle-password]')
   };
 }
@@ -270,10 +254,9 @@ function initForm(elements, http, store, onSuccess) {
 }
 
 function buildPayload(elements) {
-  const phoneValue = `${elements.countrySelect.value}${(elements.phoneInput.value || '').replace(/\D/g, '')}`;
+  const phoneValue = elements.phoneInput.value.trim();
   return {
     phone: phoneValue,
-    rawPhone: elements.phoneInput.value.trim(),
     password: elements.passwordInput.value,
     displayName: elements.displayInput.value.trim()
   };
@@ -281,8 +264,10 @@ function buildPayload(elements) {
 
 function validatePayload(payload, mode) {
   const errors = {};
-  if (!/^\+\d{9,14}$/.test(payload.phone)) {
-    errors.phone = 'Vui lòng nhập số điện thoại hợp lệ (9-14 số).';
+  // Validate phone: chỉ số, 9-11 ký tự
+  const phoneDigits = payload.phone.replace(/\D/g, '');
+  if (phoneDigits.length < 9 || phoneDigits.length > 11) {
+    errors.phone = 'Vui lòng nhập số điện thoại hợp lệ (9-11 số).';
   }
   if (!payload.password || payload.password.length < 6) {
     errors.password = 'Mật khẩu tối thiểu 6 ký tự.';
