@@ -92,13 +92,13 @@ function renderAuthCard() {
       <form class="auth-form" id="authForm" novalidate>
         <div class="auth-field">
           <label for="phoneInput">Số điện thoại</label>
-          <input id="phoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0912345678" required aria-describedby="error-phone" aria-invalid="false" />
+          <input id="phoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" required aria-describedby="error-phone" aria-invalid="false" />
           <span class="field-error" id="error-phone" aria-live="polite"></span>
         </div>
 
         <div class="auth-field" data-display-name>
           <label for="displayNameInput">Tên hiển thị</label>
-          <input id="displayNameInput" name="displayName" type="text" placeholder="Nguyễn An" aria-describedby="error-displayName" aria-invalid="false" />
+          <input id="displayNameInput" name="displayName" type="text"  aria-describedby="error-displayName" aria-invalid="false" />
           <span class="field-error" id="error-displayName" aria-live="polite"></span>
         </div>
 
@@ -149,7 +149,6 @@ function renderMetricsSection() {
         <div>
           <p style="margin:0 0 0.5rem;font-size:0.95rem;letter-spacing:0.08em;text-transform:uppercase;">Trust & Adoption</p>
           <h3 style="margin:0;font-size:2rem;">10K+ người sử dụng để giao tiếp và học tập.</h3>
-          <p style="margin:0.75rem 0 0;opacity:0.85;">Tối ưu cho demo cuối kỳ nhưng đủ chỉn chu để triển khai MVP nội bộ.</p>
         </div>
         <div class="metric-badge">
           <span>⚡</span>
