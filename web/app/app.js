@@ -42,6 +42,23 @@ rtcClient.setIncomingCallHandler((roomId, callerId, callerName) => {
   incomingCallNotification.show(roomId, name, avatar);
 });
 
+// Set call end handler
+rtcClient.setCallEndHandler(async (roomId, reason) => {
+  // Close the call modal
+  await callModal.close();
+  
+  // Hide incoming call notification if it's showing
+  incomingCallNotification.hide();
+  
+  // Send call end event to server to save history (server will broadcast to all)
+  if (reason === 'declined') {
+    wsClient.sendRtc({ t: 'rtc-call-end', roomId, status: 'declined' });
+  } else if (reason === 'ended') {
+    wsClient.sendRtc({ t: 'rtc-call-end', roomId, status: 'completed' });
+  }
+  // Note: 'cancelled' is already handled by rtc-call-cancel in stop()
+});
+
 wsClient.setRtcHandler((event) => rtcClient.handleSignal(event));
 
 let shell = null;

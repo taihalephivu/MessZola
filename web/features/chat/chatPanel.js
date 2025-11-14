@@ -93,8 +93,12 @@ export class ChatPanel {
 
   async ensureHistory(roomId) {
     if (this.loadedRooms.has(roomId)) return;
+    
+    // Fetch messages from server (includes call history)
     const messages = await this.http.get(`/rooms/${roomId}/messages`);
+    
     this.store.setMessages(roomId, messages);
+    
     if (messages.length) {
       this.cursors[roomId] = messages[0].createdAt;
     }
@@ -165,7 +169,16 @@ export class ChatPanel {
       this.chatAvatar.textContent = '💬';
     }
     
-    const messages = state.messages[state.currentRoomId] || [];
+    // Get messages and ensure they're sorted by timestamp
+    let messages = state.messages[state.currentRoomId] || [];
+    
+    // Sort messages by timestamp to ensure correct order
+    messages = messages.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.created_at).getTime();
+      const timeB = new Date(b.createdAt || b.created_at).getTime();
+      return timeA - timeB;
+    });
+    
     this.renderMessages(messages, state.user?.id);
     
     const typers = state.typing[state.currentRoomId] || [];
@@ -184,23 +197,38 @@ export class ChatPanel {
       return;
     }
     
+    console.log('Rendering messages:', messages.length, messages);
+    
     const maxRender = 200;
     const slice = messages.length > maxRender ? messages.slice(messages.length - maxRender) : messages;
     
-    // Group messages by sender
+    // Group messages by sender, but call-history messages are standalone
     const grouped = [];
     let currentGroup = null;
     
     slice.forEach((msg) => {
-      if (!currentGroup || currentGroup.senderId !== msg.senderId) {
-        currentGroup = {
-          senderId: msg.senderId,
+      // Call history messages are standalone (not grouped)
+      if (msg.type === 'call-history') {
+        grouped.push({
+          senderId: msg.senderId || msg.sender_id,
           senderName: msg.senderName || 'User',
-          messages: []
-        };
-        grouped.push(currentGroup);
+          messages: [msg],
+          isCallHistory: true
+        });
+        currentGroup = null; // Reset current group
+      } else {
+        const msgSenderId = msg.senderId || msg.sender_id;
+        if (!currentGroup || currentGroup.senderId !== msgSenderId) {
+          currentGroup = {
+            senderId: msgSenderId,
+            senderName: msg.senderName || 'User',
+            messages: [],
+            isCallHistory: false
+          };
+          grouped.push(currentGroup);
+        }
+        currentGroup.messages.push(msg);
       }
-      currentGroup.messages.push(msg);
     });
     
     this.messageList.innerHTML = grouped
@@ -212,6 +240,12 @@ export class ChatPanel {
   renderMessageGroup(group, userId) {
     const isMe = group.senderId === userId;
     const state = this.store.getState();
+    
+    // If this is a call history group, render it differently (centered, no avatar)
+    if (group.isCallHistory) {
+      const msg = group.messages[0];
+      return `<div class="call-history-wrapper">${this.renderCallHistoryMessage(msg, isMe)}</div>`;
+    }
     
     // Get proper display name, initial, and avatar
     let displayName = group.senderName || 'User';
@@ -247,7 +281,7 @@ export class ChatPanel {
       const filesMarkup = (msg.files || [])
         .map((file) => `<a class="file-pill" href="${file.url}" target="_blank">${this.escape(file.name)} (${Math.round(file.size / 1024)} KB)</a>`)
         .join('');
-      const time = new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const time = new Date(msg.createdAt || msg.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       
       return `
         <div class="message ${isMe ? 'me' : ''}">
@@ -265,6 +299,50 @@ export class ChatPanel {
           ${!isMe ? `<div class="message-sender">${this.escape(displayName)}</div>` : ''}
           ${messagesHtml}
         </div>
+      </div>
+    `;
+  }
+
+  renderCallHistoryMessage(msg, isMe) {
+    const time = new Date(msg.created_at || msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    // Parse metadata if it's a string
+    let callStatus = msg.call_status;
+    if (!callStatus && msg.metadata) {
+      try {
+        const metadata = typeof msg.metadata === 'string' ? JSON.parse(msg.metadata) : msg.metadata;
+        callStatus = metadata.call_status;
+      } catch (err) {
+        console.error('Failed to parse call history metadata:', err);
+      }
+    }
+    
+    let icon = '';
+    let text = '';
+    let statusClass = '';
+    
+    switch (callStatus) {
+      case 'declined':
+        text = isMe ? 'Cuộc gọi bị từ chối' : 'Đã từ chối cuộc gọi';
+        statusClass = 'declined';
+        break;
+      case 'missed':
+        text = isMe ? 'Cuộc gọi nhỡ' : 'Cuộc gọi nhỡ';
+        statusClass = 'missed';
+        break;
+      case 'completed':
+        text = 'Cuộc gọi đã kết thúc';
+        statusClass = 'completed';
+        break;
+      default:
+        text = 'Cuộc gọi';
+    }
+    
+    return `
+      <div class="message call-history ${statusClass}">
+        <span class="call-icon">${icon}</span>
+        <span class="call-text">${text}</span>
+        <small>${time}</small>
       </div>
     `;
   }

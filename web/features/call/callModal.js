@@ -58,21 +58,26 @@ export class CallModal {
   }
 
   renderStreams({ localStream, remoteStreams }) {
+    console.log('Rendering streams - Local:', !!localStream, 'Remote count:', remoteStreams.length);
+    
     this.attachLocalStream(localStream);
     
     // Remove disconnected peers
     const activePeerIds = new Set(remoteStreams.map(([peerId]) => peerId));
     this.videoGrid.querySelectorAll('.video-container[data-peer]').forEach((container) => {
       if (!activePeerIds.has(container.dataset.peer)) {
+        console.log('Removing disconnected peer:', container.dataset.peer);
         container.remove();
       }
     });
     
     // Add or update remote streams
     remoteStreams.forEach(([peerId, stream]) => {
+      console.log('Processing remote stream for peer:', peerId, 'Stream:', stream);
       let container = this.videoGrid.querySelector(`.video-container[data-peer="${peerId}"]`);
       
       if (!container) {
+        console.log('Creating new video container for peer:', peerId);
         // Create new video container
         container = document.createElement('div');
         container.className = 'video-container remote-video';
@@ -91,16 +96,24 @@ export class CallModal {
         container.appendChild(label);
         this.videoGrid.appendChild(container);
         
-        videoEl.play().catch(() => {});
+        console.log('Video element created, attempting to play...');
+        videoEl.play().catch((err) => {
+          console.error('Failed to play remote video:', err);
+        });
       } else {
         // Update existing video
         const videoEl = container.querySelector('video');
         if (videoEl && videoEl.srcObject !== stream) {
+          console.log('Updating existing video stream for peer:', peerId);
           videoEl.srcObject = stream;
-          videoEl.play().catch(() => {});
+          videoEl.play().catch((err) => {
+            console.error('Failed to play updated video:', err);
+          });
         }
       }
     });
+    
+    console.log('Total video containers in grid:', this.videoGrid.querySelectorAll('.video-container').length);
   }
 
   getUserName(userId) {

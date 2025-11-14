@@ -83,6 +83,7 @@ export class WsClient {
           break;
         case 'rtc-call-incoming':
         case 'rtc-call-declined':
+        case 'rtc-call-cancelled':
         case 'rtc-peers':
         case 'rtc-joined':
         case 'rtc-left':

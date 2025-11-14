@@ -16,10 +16,15 @@ export class RtcClient {
     this.micEnabled = true;
     this.camEnabled = true;
     this.onIncomingCall = null;
+    this.onCallEnd = null;
   }
   
   setIncomingCallHandler(handler) {
     this.onIncomingCall = handler;
+  }
+
+  setCallEndHandler(handler) {
+    this.onCallEnd = handler;
   }
 
   onUpdate(listener) {
@@ -55,13 +60,35 @@ export class RtcClient {
 
   async ensureLocalStream() {
     if (!this.localStream) {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      this.emit();
+      console.log('🎥 Requesting camera and microphone access...');
+      try {
+        this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('✅ Local stream obtained:', this.localStream.getTracks().map(t => `${t.kind}: ${t.enabled}`));
+        this.emit();
+      } catch (err) {
+        console.error('❌ Failed to get local stream:', err.name, err.message);
+        
+        // Show user-friendly error message
+        if (err.name === 'NotAllowedError') {
+          alert('Vui lòng cho phép truy cập camera và microphone để thực hiện cuộc gọi.');
+        } else if (err.name === 'NotReadableError') {
+          alert('Camera đang được sử dụng bởi ứng dụng khác. Vui lòng đóng các ứng dụng khác và thử lại.');
+        } else if (err.name === 'NotFoundError') {
+          alert('Không tìm thấy camera hoặc microphone. Vui lòng kiểm tra thiết bị của bạn.');
+        } else {
+          alert('Không thể truy cập camera/microphone: ' + err.message);
+        }
+        
+        throw err;
+      }
     }
     return this.localStream;
   }
 
   async stop() {
+    const currentRoomId = this.roomId;
+    const currentPeers = this.store.getState().call.peers || [];
+    
     this.peerConnections.forEach((pc) => pc.close());
     this.peerConnections.clear();
     this.remoteStreams.forEach((stream) => stream.getTracks().forEach((track) => track.stop()));
@@ -70,8 +97,15 @@ export class RtcClient {
       this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
-    if (this.roomId) {
-      this.wsClient.sendRtc({ t: 'rtc-leave', roomId: this.roomId });
+    if (currentRoomId) {
+      // If no peers have joined yet (still ringing), send cancel instead of leave
+      if (currentPeers.length === 0) {
+        console.log('📵 Cancelling call (no one joined yet)');
+        this.wsClient.sendRtc({ t: 'rtc-call-cancel', roomId: currentRoomId });
+      } else {
+        console.log('👋 Leaving call');
+        this.wsClient.sendRtc({ t: 'rtc-leave', roomId: currentRoomId });
+      }
     }
     this.store.setCallState({ activeRoomId: null, peers: [] });
     this.emit();
@@ -85,26 +119,84 @@ export class RtcClient {
           this.onIncomingCall(event.roomId, event.from, event.callerName);
         }
         break;
+      case 'rtc-call-declined':
+        // Handle when someone declines the call
+        if (this.roomId === event.roomId) {
+          console.log('Call declined by user:', event.userId);
+          // Show notification to caller
+          this.showCallDeclinedNotification();
+          // Auto close the call after a short delay
+          setTimeout(() => {
+            const roomId = this.roomId;
+            this.stop();
+            // Notify app to close modal and add call history
+            if (this.onCallEnd) {
+              this.onCallEnd(roomId, 'declined');
+            }
+          }, 2000);
+        }
+        break;
+      case 'rtc-call-cancelled':
+        // Handle when caller cancels the call before we answer
+        console.log('Call cancelled by caller:', event.userId);
+        // This will be handled by app.js to hide incoming call notification
+        if (this.onCallEnd) {
+          this.onCallEnd(event.roomId, 'cancelled');
+        }
+        break;
       case 'rtc-peers':
+        console.log(`👥 Existing peers in room:`, event.peers);
         this.store.setCallState({ peers: event.peers });
         event.peers.forEach((peerId) => this.createPeer(peerId, true));
         break;
       case 'rtc-joined':
+        console.log(`👤 User ${event.userId} joined the call`);
         this.store.setCallState({ peers: [...new Set([...(this.store.getState().call.peers || []), event.userId])] });
         break;
       case 'rtc-left':
+        console.log(`👋 User ${event.userId} left the call`);
         this.closePeer(event.userId);
+        
+        // Check if there are any remaining peers
+        const remainingPeers = this.store.getState().call.peers || [];
+        console.log(`Remaining peers after ${event.userId} left:`, remainingPeers);
+        
+        // If no one else is in the call, show notification and auto-close after delay
+        if (remainingPeers.length === 0) {
+          console.log('No more peers in call, auto-closing...');
+          this.showCallEndedNotification();
+          setTimeout(() => {
+            const roomId = this.roomId;
+            this.stop();
+            if (this.onCallEnd) {
+              this.onCallEnd(roomId, 'ended');
+            }
+          }, 2000);
+        }
         break;
       case 'rtc-offer':
+        console.log(`📨 Received offer from ${event.from}`);
         this.ensurePeer(event.from, false).then(async (pc) => {
+          console.log(`📝 Setting remote description and creating answer for ${event.from}`);
           await pc.setRemoteDescription(new RTCSessionDescription(event.sdp));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
+          console.log(`📤 Sending answer to ${event.from}`);
           this.wsClient.sendRtc({ t: 'rtc-answer', roomId: this.roomId, to: event.from, sdp: answer });
+        }).catch(err => {
+          console.error(`❌ Error handling offer from ${event.from}:`, err);
         });
         break;
       case 'rtc-answer':
-        this.peerConnections.get(event.from)?.setRemoteDescription(new RTCSessionDescription(event.sdp));
+        console.log(`📨 Received answer from ${event.from}`);
+        const pc = this.peerConnections.get(event.from);
+        if (pc) {
+          pc.setRemoteDescription(new RTCSessionDescription(event.sdp))
+            .then(() => console.log(`✅ Remote description set for ${event.from}`))
+            .catch(err => console.error(`❌ Error setting remote description for ${event.from}:`, err));
+        } else {
+          console.error(`❌ No peer connection found for ${event.from}`);
+        }
         break;
       case 'rtc-ice':
         if (event.candidate) {
@@ -116,6 +208,50 @@ export class RtcClient {
     }
   }
 
+  showCallDeclinedNotification() {
+    this.showNotification('📞', 'Cuộc gọi đã bị từ chối', 'rgba(220, 38, 38, 0.95)');
+  }
+
+  showCallEndedNotification() {
+    this.showNotification('📞', 'Người kia đã kết thúc cuộc gọi', 'rgba(100, 116, 139, 0.95)');
+  }
+
+  showNotification(icon, text, bgColor) {
+    // Create a temporary notification element
+    const notification = document.createElement('div');
+    notification.className = 'call-notification';
+    notification.innerHTML = `
+      <div class="notification-content">
+        <span class="notification-icon">${icon}</span>
+        <span class="notification-text">${text}</span>
+      </div>
+    `;
+    
+    // Add styles inline
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${bgColor};
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      animation: slideDown 0.3s ease-out;
+      font-size: 16px;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideUp 0.3s ease-out';
+      setTimeout(() => notification.remove(), 300);
+    }, 2000);
+  }
+
   async ensurePeer(peerId, initiator) {
     if (this.peerConnections.has(peerId)) {
       return this.peerConnections.get(peerId);
@@ -124,29 +260,46 @@ export class RtcClient {
   }
 
   async createPeer(peerId, initiator) {
+    console.log(`🔗 Creating peer connection with ${peerId}, initiator: ${initiator}`);
+    
     await this.ensureLocalStream();
+    
     const pc = new RTCPeerConnection(RTC_CONFIG);
     this.peerConnections.set(peerId, pc);
-    this.localStream.getTracks().forEach((track) => pc.addTrack(track, this.localStream));
+    
+    // Add local tracks to peer connection
+    this.localStream.getTracks().forEach((track) => {
+      console.log(`➕ Adding ${track.kind} track to peer ${peerId}`);
+      pc.addTrack(track, this.localStream);
+    });
+    
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         this.wsClient.sendRtc({ t: 'rtc-ice', roomId: this.roomId, to: peerId, candidate: event.candidate });
       }
     };
+    
     pc.ontrack = (event) => {
+      console.log(`📥 Received ${event.track.kind} track from peer ${peerId}`);
+      console.log('Stream:', event.streams[0], 'Tracks:', event.streams[0].getTracks().map(t => `${t.kind}: ${t.enabled}`));
       this.remoteStreams.set(peerId, event.streams[0]);
       this.emit();
     };
+    
     pc.onconnectionstatechange = () => {
+      console.log(`🔌 Peer ${peerId} connection state: ${pc.connectionState}`);
       if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
         this.closePeer(peerId);
       }
     };
+    
     if (initiator) {
+      console.log(`📤 Creating offer for peer ${peerId}`);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       this.wsClient.sendRtc({ t: 'rtc-offer', roomId: this.roomId, to: peerId, sdp: offer });
     }
+    
     return pc;
   }
 

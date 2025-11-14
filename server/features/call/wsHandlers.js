@@ -73,6 +73,50 @@ function registerCallWs(hub) {
       // Ignore errors for decline
     }
   });
+
+  // Handle call cancellation (when caller hangs up before callee answers)
+  hub.registerHandler('rtc-call-cancel', ({ user, data, hub: wsHub }) => {
+    try {
+      // Get all members in the room
+      const peerIds = usecases.call.getPeerIds(data.roomId, user.id);
+      
+      // Save call history as missed call
+      try {
+        usecases.chat.saveCallHistory({
+          roomId: data.roomId,
+          userId: user.id,
+          status: 'missed'
+        });
+      } catch (historyErr) {
+        console.error('Failed to save call history:', historyErr);
+      }
+      
+      // Notify all room members that call was cancelled
+      peerIds.forEach((peerId) => {
+        wsHub.sendToUser(peerId, {
+          t: 'rtc-call-cancelled',
+          roomId: data.roomId,
+          userId: user.id
+        });
+      });
+    } catch (err) {
+      // Ignore errors for cancel
+    }
+  });
+
+  // Handle call end (save history when call completes)
+  hub.registerHandler('rtc-call-end', ({ user, data, hub: wsHub }) => {
+    try {
+      // Save call history
+      usecases.chat.saveCallHistory({
+        roomId: data.roomId,
+        userId: user.id,
+        status: data.status || 'completed'
+      });
+    } catch (err) {
+      console.error('Failed to save call history:', err);
+    }
+  });
 }
 
 module.exports = { registerCallWs };
