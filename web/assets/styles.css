@@ -2694,7 +2694,7 @@ select:focus {
   flex: 1;
   display: grid;
   gap: 16px;
-  padding: 20px;
+  padding: 20px 20px 140px 20px; /* Extra bottom padding for controls */
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   grid-auto-rows: minmax(200px, 1fr);
   align-items: center;
