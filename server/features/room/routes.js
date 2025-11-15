@@ -8,10 +8,10 @@ const router = express.Router();
 
 const directSchema = z.object({ peerId: z.string().uuid() });
 const groupSchema = z.object({
-  name: z.string().min(3),
-  memberIds: z.array(z.string().uuid()).min(1)
+  name: z.string().trim().min(3, 'Tên nhóm tối thiểu 3 ký tự'),
+  memberIds: z.array(z.string().trim().min(1, 'Mã thành viên không hợp lệ')).min(1, 'Cần ít nhất 1 thành viên')
 });
-const renameSchema = z.object({ name: z.string().min(3) });
+const renameSchema = z.object({ name: z.string().trim().min(3) });
 
 router.use(auth);
 

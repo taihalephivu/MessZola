@@ -1,5 +1,13 @@
 export class Store {
   constructor() {
+    let initialView = 'chat';
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        initialView = window.localStorage.getItem('messzola_view') || 'chat';
+      }
+    } catch (err) {
+      // Ignore storage errors; fall back to default view
+    }
     this.state = {
       token: null,
       user: null,
@@ -9,7 +17,7 @@ export class Store {
       currentRoomId: null,
       messages: {},
       typing: {},
-      view: 'chat',
+      view: initialView,
       call: { activeRoomId: null, peers: [] },
       onlineUsers: new Set() // Track online user IDs
     };
@@ -50,8 +58,12 @@ export class Store {
     this.setState({ friendRequests });
   }
 
-  setCurrentRoom(roomId) {
-    this.setState({ currentRoomId: roomId, view: 'chat' });
+  setCurrentRoom(roomId, options = {}) {
+    const { switchToChat = true } = options;
+    if (switchToChat && this.state.view !== 'chat') {
+      this.setView('chat');
+    }
+    this.setState({ currentRoomId: roomId });
   }
 
   addMessage(roomId, message) {
@@ -85,6 +97,13 @@ export class Store {
 
   setView(view) {
     this.setState({ view });
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('messzola_view', view);
+      }
+    } catch (err) {
+      // Ignore storage errors so UX still works
+    }
   }
 
   setCallState(callState) {

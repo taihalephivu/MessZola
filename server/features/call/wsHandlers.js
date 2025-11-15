@@ -77,6 +77,10 @@ function registerCallWs(hub) {
   // Handle call cancellation (when caller hangs up before callee answers)
   hub.registerHandler('rtc-call-cancel', ({ user, data, hub: wsHub }) => {
     try {
+      if (!data?.roomId) {
+        console.warn('rtc-call-cancel received without roomId, skip history');
+        return;
+      }
       // Get all members in the room
       const peerIds = usecases.call.getPeerIds(data.roomId, user.id);
       
@@ -107,6 +111,10 @@ function registerCallWs(hub) {
   // Handle call end (save history when call completes)
   hub.registerHandler('rtc-call-end', ({ user, data, hub: wsHub }) => {
     try {
+      if (!data?.roomId) {
+        console.warn('rtc-call-end received without roomId, skip history');
+        return;
+      }
       // Save call history
       usecases.chat.saveCallHistory({
         roomId: data.roomId,

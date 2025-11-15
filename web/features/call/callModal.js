@@ -6,6 +6,7 @@ export class CallModal {
     this.overlay = null;
     this.videoGrid = null;
     this.localVideo = null;
+    this.localVideoContainer = null;
     this.unsubscribe = null;
   }
 
@@ -14,6 +15,7 @@ export class CallModal {
     this.overlay = this.mount.querySelector('.call-overlay');
     this.videoGrid = this.mount.querySelector('.video-grid');
     this.localVideo = this.mount.querySelector('[data-local-video]');
+    this.localVideoContainer = this.mount.querySelector('.video-container.local-video');
     
     const micBtn = this.mount.querySelector('[data-action="mic"]');
     const camBtn = this.mount.querySelector('[data-action="cam"]');
@@ -61,6 +63,9 @@ export class CallModal {
     console.log('Rendering streams - Local:', !!localStream, 'Remote count:', remoteStreams.length);
     
     this.attachLocalStream(localStream);
+    if (this.localVideoContainer) {
+      this.localVideoContainer.style.display = localStream ? 'block' : 'none';
+    }
     
     // Remove disconnected peers
     const activePeerIds = new Set(remoteStreams.map(([peerId]) => peerId));
@@ -141,11 +146,17 @@ export class CallModal {
   }
 
   attachLocalStream(stream) {
-    if (this.localVideo && stream && this.localVideo.srcObject !== stream) {
-      this.localVideo.srcObject = stream;
-      this.localVideo.muted = true;
-      this.localVideo.playsInline = true;
-      this.localVideo.play().catch(() => {});
+    if (!this.localVideo) return;
+    if (stream) {
+      if (this.localVideo.srcObject !== stream) {
+        this.localVideo.srcObject = stream;
+        this.localVideo.muted = true;
+        this.localVideo.playsInline = true;
+        this.localVideo.play().catch(() => {});
+      }
+    } else if (this.localVideo.srcObject) {
+      this.localVideo.pause();
+      this.localVideo.srcObject = null;
     }
   }
 

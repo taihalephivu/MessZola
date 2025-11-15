@@ -106,6 +106,17 @@ export class ChatPanel {
     this.scrollToBottom();
   }
 
+  loadHistory(roomId, options = {}) {
+    if (!roomId) return;
+    const execute = () => this.ensureHistory(roomId);
+    if (options.defer && typeof window !== 'undefined') {
+      const scheduler = window.requestIdleCallback || window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+      scheduler(execute);
+    } else {
+      execute();
+    }
+  }
+
   async loadOlder(roomId) {
     const before = this.cursors[roomId];
     if (!before) return;
@@ -162,8 +173,6 @@ export class ChatPanel {
         const isOnline = this.store.isUserOnline(friendId);
         this.chatStatus.textContent = isOnline ? 'Đang hoạt động' : 'Ngoại tuyến';
       }
-      
-      this.ensureHistory(room.id);
     } else {
       // No room selected
       this.chatName.textContent = 'Chọn một cuộc trò chuyện';

@@ -12,6 +12,9 @@ import { GroupPanel } from '../features/groups/groupPanel.js';
 import { SettingsPanel } from '../features/settings/settingsPanel.js';
 import { IncomingCallNotification } from '../features/call/incomingCallNotification.js';
 
+const DATA_CACHE_KEY = 'messzola_cache_v1';
+const DATA_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 const appMount = document.getElementById('app');
 const callRoot = document.getElementById('call-root');
 const incomingCallRoot = document.getElementById('incoming-call-root');
@@ -127,23 +130,37 @@ async function startApp() {
 }
 
 async function loadInitialData() {
+  hydrateDataFromCache();
   const [friends, requests, rooms] = await Promise.all([
     http.get('/friends'),
     http.get('/friends/requests'),
     http.get('/rooms')
   ]);
+  const formattedRooms = formatRooms(rooms);
   store.setFriends(friends);
   store.setFriendRequests(requests);
-  store.setRooms(formatRooms(rooms));
+  store.setRooms(formattedRooms);
+  persistDataCache({ friends, friendRequests: requests, rooms: formattedRooms });
+  
+  let targetRoomId = null;
   
   // Restore last room from localStorage
   const lastRoomId = localStorage.getItem('messzola_last_room');
-  if (lastRoomId && rooms.find(r => r.id === lastRoomId)) {
-    // Room still exists, restore it
-    store.setCurrentRoom(lastRoomId);
+  if (lastRoomId && formattedRooms.find(r => r.id === lastRoomId)) {
+    // Room still exists, restore it without changing current view
+    store.setCurrentRoom(lastRoomId, { switchToChat: false });
+    targetRoomId = lastRoomId;
   } else if (!store.getState().currentRoomId && rooms.length) {
-    // No saved room or room doesn't exist, use first room
-    store.setCurrentRoom(rooms[0].id);
+    // No saved room or room doesn't exist, use first room (but keep view as-is)
+    const fallbackRoomId = formattedRooms[0]?.id;
+    if (fallbackRoomId) {
+      store.setCurrentRoom(fallbackRoomId, { switchToChat: false });
+      targetRoomId = fallbackRoomId;
+    }
+  }
+
+  if (targetRoomId) {
+    scheduleHistoryLoad(targetRoomId, { defer: true });
   }
 }
 
@@ -155,10 +172,59 @@ function formatRooms(rooms) {
   }));
 }
 
-async function selectRoom(roomId) {
+function hydrateDataFromCache() {
+  try {
+    const raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return;
+    const cache = JSON.parse(raw);
+    const userId = store.getState().user?.id;
+    if (!userId || cache.userId !== userId) {
+      return;
+    }
+    if (Date.now() - cache.timestamp > DATA_CACHE_TTL) {
+      return;
+    }
+    if (Array.isArray(cache.friends)) {
+      store.setFriends(cache.friends);
+    }
+    if (Array.isArray(cache.friendRequests)) {
+      store.setFriendRequests(cache.friendRequests);
+    }
+    if (Array.isArray(cache.rooms)) {
+      store.setRooms(cache.rooms);
+    }
+  } catch (err) {
+    console.warn('Failed to hydrate cache', err);
+  }
+}
+
+function persistDataCache({ friends, friendRequests, rooms }) {
+  try {
+    const userId = store.getState().user?.id;
+    if (!userId) return;
+    const payload = {
+      userId,
+      timestamp: Date.now(),
+      friends,
+      friendRequests,
+      rooms
+    };
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    console.warn('Failed to cache data', err);
+  }
+}
+
+function scheduleHistoryLoad(roomId, options = {}) {
+  if (!roomId || !chatPanel) return;
+  chatPanel.loadHistory(roomId, options);
+}
+
+function selectRoom(roomId) {
   store.setCurrentRoom(roomId);
   // Save to localStorage
   localStorage.setItem('messzola_last_room', roomId);
+  scheduleHistoryLoad(roomId);
 }
 
 async function startDirectRoom(peerId) {
@@ -170,6 +236,7 @@ async function startDirectRoom(peerId) {
     store.setView('chat');
     // Save to localStorage
     localStorage.setItem('messzola_last_room', room.id);
+    scheduleHistoryLoad(room.id);
   } catch (err) {
     alert(err.message);
   }
@@ -180,6 +247,8 @@ async function handleLogout() {
   wsClient.disconnect();
   localStorage.removeItem('messzola_token');
   localStorage.removeItem('messzola_last_room');
+  localStorage.removeItem('messzola_view');
+  localStorage.removeItem(DATA_CACHE_KEY);
   store.setState({ token: null, user: null, rooms: [], friends: [], currentRoomId: null, messages: {}, view: 'chat' });
   if (shell) {
     shell.destroy();

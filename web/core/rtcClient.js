@@ -17,6 +17,7 @@ export class RtcClient {
     this.camEnabled = true;
     this.onIncomingCall = null;
     this.onCallEnd = null;
+    this.hadRemotePeer = false;
   }
   
   setIncomingCallHandler(handler) {
@@ -42,6 +43,7 @@ export class RtcClient {
 
   async start(roomId, isAnswering = false) {
     this.roomId = roomId;
+    this.hadRemotePeer = false;
     const stream = await this.ensureLocalStream();
     this.store.setCallState({ activeRoomId: roomId });
     
@@ -87,7 +89,7 @@ export class RtcClient {
 
   async stop() {
     const currentRoomId = this.roomId;
-    const currentPeers = this.store.getState().call.peers || [];
+    const hadPeers = this.hadRemotePeer;
     
     this.peerConnections.forEach((pc) => pc.close());
     this.peerConnections.clear();
@@ -98,8 +100,7 @@ export class RtcClient {
       this.localStream = null;
     }
     if (currentRoomId) {
-      // If no peers have joined yet (still ringing), send cancel instead of leave
-      if (currentPeers.length === 0) {
+      if (!hadPeers) {
         console.log('📵 Cancelling call (no one joined yet)');
         this.wsClient.sendRtc({ t: 'rtc-call-cancel', roomId: currentRoomId });
       } else {
@@ -110,6 +111,7 @@ export class RtcClient {
     this.store.setCallState({ activeRoomId: null, peers: [] });
     this.emit();
     this.roomId = null;
+    this.hadRemotePeer = false;
   }
 
   handleSignal(event) {
@@ -147,11 +149,15 @@ export class RtcClient {
       case 'rtc-peers':
         console.log(`👥 Existing peers in room:`, event.peers);
         this.store.setCallState({ peers: event.peers });
+        if (event.peers && event.peers.length) {
+          this.hadRemotePeer = true;
+        }
         event.peers.forEach((peerId) => this.createPeer(peerId, true));
         break;
       case 'rtc-joined':
         console.log(`👤 User ${event.userId} joined the call`);
         this.store.setCallState({ peers: [...new Set([...(this.store.getState().call.peers || []), event.userId])] });
+        this.hadRemotePeer = true;
         break;
       case 'rtc-left':
         console.log(`👋 User ${event.userId} left the call`);
