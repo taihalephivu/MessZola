@@ -40,4 +40,13 @@ router.post('/requests/:id/accept', (req, res) => {
   }
 });
 
+router.delete('/:friendId', (req, res) => {
+  try {
+    usecases.friend.removeFriend(req.user.id, req.params.friendId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -18,7 +18,7 @@ class ChatUseCases {
       content: null,
       type: 'call-history',
       metadata: JSON.stringify({ call_status: status })
-    }, { broadcast: true });
+    }, { broadcast: true, skipPermissionCheck: true });
   }
 }
 

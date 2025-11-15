@@ -18,6 +18,10 @@ class FriendUseCases {
   getFriends(userId) {
     return this.friendService.listFriends(userId);
   }
+
+  removeFriend(userId, friendId) {
+    return this.friendService.removeFriend(userId, friendId);
+  }
 }
 
 module.exports = FriendUseCases;

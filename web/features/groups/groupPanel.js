@@ -115,25 +115,54 @@ export class GroupPanel {
     this.groupsList.innerHTML = groups.map(group => {
       const members = group.members ? group.members.split(',').length : 0;
       const initial = group.name.charAt(0).toUpperCase();
+      const isOwner = group.owner_id === state.user?.id;
       
       return `
         <div class="group-card" data-group-id="${group.id}">
           <div class="group-avatar">${initial}</div>
           <div class="group-info">
             <strong>${this.escape(group.name)}</strong>
-            <small>${members} thành viên</small>
+            <small>${members} thành viên${isOwner ? ' • Chủ nhóm' : ''}</small>
           </div>
+          ${!isOwner ? `<button class="remove-group-btn" data-leave-group="${group.id}" title="Rời nhóm">×</button>` : ''}
         </div>
       `;
     }).join('');
     
-    // Add click handlers
-    this.groupsList.querySelectorAll('[data-group-id]').forEach(card => {
-      card.addEventListener('click', () => {
+    // Add click handlers for group cards
+    this.groupsList.querySelectorAll('.group-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // Don't navigate if clicking the leave button
+        if (e.target.classList.contains('remove-group-btn')) {
+          return;
+        }
         const groupId = card.dataset.groupId;
         if (this.onSelectRoom) {
           this.onSelectRoom(groupId);
           this.store.setView('chat');
+        }
+      });
+    });
+    
+    // Add click handlers for leave buttons
+    this.groupsList.querySelectorAll('[data-leave-group]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const groupId = btn.dataset.leaveGroup;
+        const groupName = btn.closest('.group-card').querySelector('strong').textContent;
+        
+        if (confirm(`Bạn có chắc chắn muốn rời khỏi nhóm "${groupName}"?`)) {
+          try {
+            console.log('Leaving group:', groupId);
+            const result = await this.http.delete(`/rooms/${groupId}/leave`);
+            console.log('Leave result:', result);
+            // Reload rooms list
+            const rooms = await this.http.get('/rooms');
+            this.store.setRooms(this.formatRooms(rooms));
+          } catch (err) {
+            console.error('Leave group error:', err);
+            alert(err.message || 'Không thể rời nhóm');
+          }
         }
       });
     });

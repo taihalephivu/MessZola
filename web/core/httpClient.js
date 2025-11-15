@@ -44,4 +44,8 @@ export class HttpClient {
   patch(path, body) {
     return this.request(path, { method: 'PATCH', body: JSON.stringify(body) });
   }
+
+  delete(path) {
+    return this.request(path, { method: 'DELETE' });
+  }
 }

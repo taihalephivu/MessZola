@@ -38,6 +38,15 @@ router.post('/group', validate(groupSchema), (req, res) => {
   }
 });
 
+router.delete('/:id/leave', (req, res) => {
+  try {
+    usecases.room.leaveGroup(req.params.id, req.user.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.patch('/:id', validate(renameSchema), (req, res) => {
   try {
     const room = usecases.room.rename(req.params.id, req.body.name);

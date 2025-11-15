@@ -58,6 +58,26 @@ class RoomService {
   listRooms(userId) {
     return this.roomRepository.listRoomsForUser(userId);
   }
+
+  leaveGroup(roomId, userId) {
+    const room = this.roomRepository.getRoom(roomId);
+    if (!room) {
+      throw new Error('Không tìm thấy nhóm');
+    }
+    // Check if is_group (can be 0/1 or boolean)
+    if (!room.is_group && room.is_group !== 1) {
+      throw new Error('Không thể rời phòng chat trực tiếp');
+    }
+    if (room.owner_id === userId) {
+      throw new Error('Chủ nhóm không thể rời nhóm. Vui lòng chuyển quyền chủ nhóm trước.');
+    }
+    const members = this.roomRepository.listMembers(roomId);
+    const isMember = members.some((m) => m.user_id === userId);
+    if (!isMember) {
+      throw new Error('Bạn không phải thành viên của nhóm này');
+    }
+    this.roomRepository.removeMember(roomId, userId);
+  }
 }
 
 module.exports = RoomService;

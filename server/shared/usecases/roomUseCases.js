@@ -22,6 +22,10 @@ class RoomUseCases {
   getMemberIds(roomId, userId) {
     return this.roomService.getMemberIds(roomId, userId);
   }
+
+  leaveGroup(roomId, userId) {
+    return this.roomService.leaveGroup(roomId, userId);
+  }
 }
 
 module.exports = RoomUseCases;

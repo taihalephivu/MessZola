@@ -52,15 +52,42 @@
         </div>
       `)
       .join('');
+    
     this.requestList.querySelectorAll('button[data-accept]').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        await this.http.post(`/friends/requests/${btn.dataset.accept}/accept`);
-        this.reloadData();
+        try {
+          await this.http.post(`/friends/requests/${btn.dataset.accept}/accept`);
+          this.reloadData();
+        } catch (err) {
+          alert(err.message || 'Không thể chấp nhận lời mời');
+        }
       });
     });
     this.friendsList.innerHTML = state.friends
-      .map((friend) => `<div class="friend-item">${friend.display_name || friend.displayName}</div>`)
+      .map((friend) => `
+        <div class="friend-item">
+          <span>${friend.display_name || friend.displayName}</span>
+          <button class="remove-friend-btn" data-remove-friend="${friend.id}" title="Xóa bạn bè">×</button>
+        </div>
+      `)
       .join('');
+    
+    // Add event listeners for remove buttons
+    this.friendsList.querySelectorAll('button[data-remove-friend]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const friendId = btn.dataset.removeFriend;
+        const friendName = btn.parentElement.querySelector('span').textContent;
+        
+        if (confirm(`Bạn có chắc chắn muốn xóa ${friendName} khỏi danh sách bạn bè?`)) {
+          try {
+            await this.http.delete(`/friends/${friendId}`);
+            this.reloadData();
+          } catch (err) {
+            alert(err.message || 'Không thể xóa bạn bè');
+          }
+        }
+      });
+    });
   }
 
   async reloadData() {

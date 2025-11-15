@@ -48,6 +48,13 @@ class FriendshipRepository {
       [userId, userId, userId]
     );
   }
+
+  delete(userId, friendId) {
+    this.db.run(
+      `DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)`,
+      [userId, friendId, friendId, userId]
+    );
+  }
 }
 
 module.exports = FriendshipRepository;

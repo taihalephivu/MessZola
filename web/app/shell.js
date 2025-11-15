@@ -229,6 +229,7 @@ export class AppShell {
       const initial = (friend.display_name || friend.displayName || friend.phone || 'U').charAt(0).toUpperCase();
       const isOnline = this.store.isUserOnline(friend.id);
       const name = friend.display_name || friend.displayName || friend.phone;
+      const avatarUrl = friend.avatar_url || friend.avatarUrl;
       
       // Find if there's an existing direct room with this friend
       const directRoom = state.rooms ? state.rooms.find(r => 
@@ -236,9 +237,14 @@ export class AppShell {
       ) : null;
       const isActive = directRoom && state.currentRoomId === directRoom.id;
       
+      // Avatar content: image or initial
+      const avatarContent = avatarUrl 
+        ? `<img src="${avatarUrl}" alt="${this.escape(name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`
+        : initial;
+      
       return `
         <div class="sidebar-item ${isActive ? 'active' : ''}" data-friend-id="${friend.id}">
-          <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${initial}</div>
+          <div class="sidebar-avatar ${isOnline ? 'online' : 'offline'}">${avatarContent}</div>
           <div class="sidebar-info">
             <strong>${this.escape(name)}</strong>
             <small class="status-text">${isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</small>
@@ -387,7 +393,7 @@ export class AppShell {
         <header class="app-main-header">
           <div class="header-left">
             <img src="./assets/logo.png" alt="MessZola Logo" width="40" height="40" loading="lazy" />
-          <img src="./assets/logo1.png" alt="MessZola Logo" width="130" height="30" loading="lazy" />
+            <img src="./assets/logo1.png" alt="MessZola Logo" width="130" height="30" loading="lazy" />
           </div>
           <nav class="header-nav">
             <button data-view="chat" class="nav-btn active">

@@ -1,4 +1,4 @@
-﻿const FriendshipEntity = require('../entities/friendshipEntity');
+const FriendshipEntity = require('../entities/friendshipEntity');
 
 class FriendService {
   constructor({ friendshipRepository, userRepository }) {
@@ -44,6 +44,14 @@ class FriendService {
 
   listFriends(userId) {
     return this.friendshipRepository.listFriends(userId);
+  }
+
+  removeFriend(userId, friendId) {
+    const existing = this.friendshipRepository.findBetween(userId, friendId);
+    if (!existing || existing.status !== 'accepted') {
+      throw new Error('Không tìm thấy mối quan hệ bạn bè');
+    }
+    this.friendshipRepository.delete(userId, friendId);
   }
 }
 
