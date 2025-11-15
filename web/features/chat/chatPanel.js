@@ -156,8 +156,10 @@ export class ChatPanel {
         const members = room.members ? room.members.split(',').length : 0;
         this.chatStatus.textContent = `${members} thành viên`;
       } else {
-        // For direct chat, show online status (mock for now)
-        const isOnline = Math.random() > 0.5;
+        // For direct chat, show real online status
+        const memberIds = room.members.split(',');
+        const friendId = memberIds.find(id => id !== state.user?.id);
+        const isOnline = this.store.isUserOnline(friendId);
         this.chatStatus.textContent = isOnline ? 'Đang hoạt động' : 'Ngoại tuyến';
       }
       

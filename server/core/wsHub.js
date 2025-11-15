@@ -38,6 +38,13 @@ class WsHub {
       ws.on('message', (raw) => this.handleMessage(ws, raw));
       ws.on('close', () => this.handleClose(ws));
       this.send(ws, { t: 'connected', user });
+      
+      // Broadcast user online status
+      this.broadcastUserStatus(user.id, 'online');
+      
+      // Send current online users to new connection
+      const onlineUsers = this.getOnlineUsers();
+      this.send(ws, { t: 'online-users', users: onlineUsers });
     } catch (err) {
       ws.close(4002, 'Invalid token');
     }
@@ -66,6 +73,8 @@ class WsHub {
       set.delete(ws);
       if (!set.size) {
         this.userSockets.delete(userId);
+        // Broadcast user offline status
+        this.broadcastUserStatus(userId, 'offline');
       }
     }
     this.connections.delete(ws);
@@ -98,6 +107,21 @@ class WsHub {
     userIds.forEach((userId) => {
       if (options.exclude === userId) return;
       this.sendToUser(userId, payload);
+    });
+  }
+
+  isUserOnline(userId) {
+    return this.userSockets.has(userId) && this.userSockets.get(userId).size > 0;
+  }
+
+  getOnlineUsers() {
+    return Array.from(this.userSockets.keys());
+  }
+
+  broadcastUserStatus(userId, status) {
+    // Broadcast to all connected users
+    this.connections.forEach((meta, ws) => {
+      this.send(ws, { t: 'user-status', userId, status });
     });
   }
 }

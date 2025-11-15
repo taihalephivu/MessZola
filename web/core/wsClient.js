@@ -81,6 +81,14 @@ export class WsClient {
         case 'typing':
           this.store.setTyping(data.roomId, data.from, data.on);
           break;
+        case 'online-users':
+          // Initial list of online users
+          this.store.setOnlineUsers(data.users);
+          break;
+        case 'user-status':
+          // User went online/offline
+          this.store.setUserOnline(data.userId, data.status === 'online');
+          break;
         case 'rtc-call-incoming':
         case 'rtc-call-declined':
         case 'rtc-call-cancelled':

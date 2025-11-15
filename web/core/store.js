@@ -10,7 +10,8 @@ export class Store {
       messages: {},
       typing: {},
       view: 'chat',
-      call: { activeRoomId: null, peers: [] }
+      call: { activeRoomId: null, peers: [] },
+      onlineUsers: new Set() // Track online user IDs
     };
     this.listeners = new Set();
   }
@@ -88,6 +89,24 @@ export class Store {
 
   setCallState(callState) {
     this.setState({ call: { ...this.state.call, ...callState } });
+  }
+
+  setOnlineUsers(users) {
+    this.state.onlineUsers = new Set(users);
+    this.emit();
+  }
+
+  setUserOnline(userId, isOnline) {
+    if (isOnline) {
+      this.state.onlineUsers.add(userId);
+    } else {
+      this.state.onlineUsers.delete(userId);
+    }
+    this.emit();
+  }
+
+  isUserOnline(userId) {
+    return this.state.onlineUsers.has(userId);
   }
 
   getState() {

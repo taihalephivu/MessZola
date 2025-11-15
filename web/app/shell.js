@@ -139,7 +139,7 @@ export class AppShell {
       
       state.friends.forEach((friend) => {
         const initial = (friend.display_name || friend.displayName || friend.phone || 'U').charAt(0).toUpperCase();
-        const isOnline = Math.random() > 0.5;
+        const isOnline = this.store.isUserOnline(friend.id);
         const name = friend.display_name || friend.displayName || friend.phone;
         const avatarUrl = friend.avatar_url || friend.avatarUrl;
         
@@ -227,7 +227,7 @@ export class AppShell {
     
     const items = state.friends.map((friend) => {
       const initial = (friend.display_name || friend.displayName || friend.phone || 'U').charAt(0).toUpperCase();
-      const isOnline = Math.random() > 0.5; // Mock online status - replace with real data
+      const isOnline = this.store.isUserOnline(friend.id);
       const name = friend.display_name || friend.displayName || friend.phone;
       
       // Find if there's an existing direct room with this friend
