@@ -83,6 +83,8 @@ function registerCallWs(hub) {
       }
       // Get all members in the room
       const peerIds = usecases.call.getPeerIds(data.roomId, user.id);
+      // Ensure caller leaves the RTC pool to avoid ghost peers when they call again
+      rtcSignaler.leave(data.roomId, user.id);
       
       // Save call history as missed call
       try {
