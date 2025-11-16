@@ -6,7 +6,6 @@ export class CallModal {
     this.overlay = null;
     this.videoGrid = null;
     this.localVideo = null;
-    this.localVideoContainer = null;
     this.unsubscribe = null;
   }
 
@@ -15,7 +14,6 @@ export class CallModal {
     this.overlay = this.mount.querySelector('.call-overlay');
     this.videoGrid = this.mount.querySelector('.video-grid');
     this.localVideo = this.mount.querySelector('[data-local-video]');
-    this.localVideoContainer = this.mount.querySelector('.video-container.local-video');
     
     const micBtn = this.mount.querySelector('[data-action="mic"]');
     const camBtn = this.mount.querySelector('[data-action="cam"]');
@@ -63,9 +61,6 @@ export class CallModal {
     console.log('Rendering streams - Local:', !!localStream, 'Remote count:', remoteStreams.length);
     
     this.attachLocalStream(localStream);
-    if (this.localVideoContainer) {
-      this.localVideoContainer.style.display = localStream ? 'block' : 'none';
-    }
     
     // Remove disconnected peers
     const activePeerIds = new Set(remoteStreams.map(([peerId]) => peerId));
@@ -146,17 +141,11 @@ export class CallModal {
   }
 
   attachLocalStream(stream) {
-    if (!this.localVideo) return;
-    if (stream) {
-      if (this.localVideo.srcObject !== stream) {
-        this.localVideo.srcObject = stream;
-        this.localVideo.muted = true;
-        this.localVideo.playsInline = true;
-        this.localVideo.play().catch(() => {});
-      }
-    } else if (this.localVideo.srcObject) {
-      this.localVideo.pause();
-      this.localVideo.srcObject = null;
+    if (this.localVideo && stream && this.localVideo.srcObject !== stream) {
+      this.localVideo.srcObject = stream;
+      this.localVideo.muted = true;
+      this.localVideo.playsInline = true;
+      this.localVideo.play().catch(() => {});
     }
   }
 
@@ -173,13 +162,31 @@ export class CallModal {
           <div class="call-controls">
             <div class="control-btn-group">
               <button class="control-btn mic-btn" data-action="mic" title="Tắt mic">
-                <span class="control-icon">🎤</span>
+                <span class="control-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false">
+                    <path d="M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3z" />
+                    <path d="M5 10v2a7 7 0 0014 0v-2" />
+                    <path d="M12 19v3" />
+                  </svg>
+                </span>
               </button>
               <button class="control-btn cam-btn" data-action="cam" title="Tắt camera">
-                <span class="control-icon">📹</span>
+                <span class="control-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false">
+                    <rect x="3" y="7" width="11" height="10" rx="2" />
+                    <path d="M14 10l6-3v10l-6-3" />
+                  </svg>
+                </span>
               </button>
               <button class="control-btn share-btn" data-action="share" title="Chia sẻ màn hình">
-                <span class="control-icon">🖥️</span>
+                <span class="control-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false">
+                    <rect x="3" y="5" width="18" height="12" rx="2" />
+                    <path d="M12 9v7" />
+                    <path d="M12 16l-3-3" />
+                    <path d="M12 16l3-3" />
+                  </svg>
+                </span>
               </button>
             </div>
             <button class="control-btn end-btn" data-action="end" title="Kết thúc cuộc gọi">

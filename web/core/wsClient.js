@@ -81,6 +81,25 @@ export class WsClient {
         case 'typing':
           this.store.setTyping(data.roomId, data.from, data.on);
           break;
+        case 'room-disbanded': {
+          const currentRoomId = this.store.getState().currentRoomId;
+          if (typeof this.store.removeRoom === 'function') {
+            this.store.removeRoom(data.roomId);
+          }
+          if (currentRoomId && currentRoomId === data.roomId) {
+            alert('Nhóm chat đã bị giải tán bởi chủ phòng');
+          }
+          break;
+        }
+        case 'room-updated':
+          if (typeof this.store.upsertRoom === 'function') {
+            const room = {
+              ...data.room,
+              is_group: Number(data.room?.is_group)
+            };
+            this.store.upsertRoom(room);
+          }
+          break;
         case 'online-users':
           // Initial list of online users
           this.store.setOnlineUsers(data.users);

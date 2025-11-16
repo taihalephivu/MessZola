@@ -50,6 +50,33 @@ export class Store {
     this.setState({ rooms });
   }
 
+  upsertRoom(room) {
+    if (!room || !room.id) {
+      return;
+    }
+    const rooms = [...(this.state.rooms || [])];
+    const index = rooms.findIndex((r) => r.id === room.id);
+    if (index >= 0) {
+      rooms[index] = { ...rooms[index], ...room };
+    } else {
+      rooms.unshift(room);
+    }
+    this.setState({ rooms });
+  }
+
+  removeRoom(roomId) {
+    const rooms = (this.state.rooms || []).filter((room) => room.id !== roomId);
+    const messages = { ...this.state.messages };
+    delete messages[roomId];
+    const typing = { ...this.state.typing };
+    delete typing[roomId];
+    const patch = { rooms, messages, typing };
+    if (this.state.currentRoomId === roomId) {
+      patch.currentRoomId = null;
+    }
+    this.setState(patch);
+  }
+
   setFriends(friends) {
     this.setState({ friends });
   }

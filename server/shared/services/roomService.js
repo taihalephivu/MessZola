@@ -1,4 +1,5 @@
 ﻿const RoomEntity = require('../entities/roomEntity');
+const eventBus = require('../../core/eventBus');
 
 class RoomService {
   constructor({ roomRepository, userRepository }) {
@@ -64,8 +65,7 @@ class RoomService {
     if (!room) {
       throw new Error('Không tìm thấy nhóm');
     }
-    // Check if is_group (can be 0/1 or boolean)
-    if (!room.is_group && room.is_group !== 1) {
+    if (Number(room.is_group) !== 1) {
       throw new Error('Không thể rời phòng chat trực tiếp');
     }
     if (room.owner_id === userId) {
@@ -77,6 +77,68 @@ class RoomService {
       throw new Error('Bạn không phải thành viên của nhóm này');
     }
     this.roomRepository.removeMember(roomId, userId);
+  }
+
+  disbandGroup(roomId, ownerId) {
+    const room = this.roomRepository.getRoom(roomId);
+    if (!room) {
+      throw new Error('Không tìm thấy nhóm');
+    }
+    const isGroup = Number(room.is_group) === 1;
+    if (!isGroup) {
+      throw new Error('Chỉ có thể giải tán nhóm');
+    }
+    if (room.owner_id !== ownerId) {
+      throw new Error('Chỉ chủ nhóm mới có quyền giải tán');
+    }
+    const memberIds = this.roomRepository.listMemberIds(roomId);
+    this.roomRepository.deleteRoom(roomId);
+    eventBus.emit('room:disbanded', { roomId, memberIds, ownerId });
+  }
+
+  addMembers(roomId, requesterId, memberIds) {
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      throw new Error('Danh sách thành viên mời không hợp lệ');
+    }
+    const room = this.roomRepository.getRoom(roomId);
+    if (!room) {
+      throw new Error('Không tìm thấy nhóm');
+    }
+    if (Number(room.is_group) !== 1) {
+      throw new Error('Không thể thêm thành viên vào phòng trực tiếp');
+    }
+    if (room.owner_id !== requesterId) {
+      throw new Error('Chỉ chủ nhóm mới có thể mời thêm thành viên');
+    }
+    const currentMemberIds = new Set(this.roomRepository.listMemberIds(roomId));
+    if (!currentMemberIds.has(requesterId)) {
+      throw new Error('Bạn không phải thành viên của nhóm này');
+    }
+    const uniqueIds = Array.from(new Set(memberIds.map((id) => String(id).trim()))).filter(Boolean);
+    const candidates = uniqueIds.filter((id) => !currentMemberIds.has(id));
+    if (!candidates.length) {
+      throw new Error('Tất cả thành viên đã có trong nhóm');
+    }
+    const users = this.userRepository.listByIds(candidates);
+    if (!users.length) {
+      throw new Error('Không tìm thấy người dùng để thêm');
+    }
+    const validIds = users.map((u) => u.id);
+    validIds.forEach((id) => {
+      this.roomRepository.addMember(roomId, id);
+    });
+    const memberList = this.roomRepository.listMemberIds(roomId);
+    const roomSnapshot = this.roomRepository.getRoomWithMembers(roomId) || room;
+    if (!roomSnapshot.members) {
+      roomSnapshot.members = memberList.join(',');
+    }
+    eventBus.emit('room:members-added', {
+      roomId,
+      memberIds: memberList,
+      addedMemberIds: validIds,
+      room: roomSnapshot
+    });
+    return { room: roomSnapshot, addedMemberIds: validIds };
   }
 }
 

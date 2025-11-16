@@ -716,6 +716,14 @@ select:focus {
   position: relative;
 }
 
+.sidebar-avatar img,
+.chat-header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .sidebar-avatar.group {
   background: linear-gradient(135deg, var(--color-accent), #FFB87A);
 }
@@ -1085,6 +1093,23 @@ select:focus {
   box-shadow: none;
   border: none;
   cursor: pointer;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.call-btn {
+  color: #0088d8;
+  width: 48px;
+  height: 48px;
+}
+
+.call-btn svg {
+  width: 26px;
+  height: 26px;
 }
 
 .icon-btn:hover {
@@ -2327,9 +2352,22 @@ select:focus {
 }
 
 .control-icon {
-  font-size: 1.5rem;
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.control-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 /* Mic Button */
@@ -2396,9 +2434,9 @@ select:focus {
   transform: scale(1.08);
 }
 
-.end-btn .control-icon {
-  font-size: 1.8rem;
-  transform: rotate(135deg);
+.end-btn .control-icon svg {
+  width: 26px;
+  height: 26px;
 }
 
 /* Tooltip on hover */
@@ -2437,8 +2475,9 @@ select:focus {
     height: 48px;
   }
 
-  .control-icon {
-    font-size: 1.3rem;
+  .control-icon svg {
+    width: 18px;
+    height: 18px;
   }
 
   .end-btn {
@@ -2446,8 +2485,9 @@ select:focus {
     height: 56px;
   }
 
-  .end-btn .control-icon {
-    font-size: 1.5rem;
+  .end-btn .control-icon svg {
+    width: 22px;
+    height: 22px;
   }
 
   .control-btn-group {

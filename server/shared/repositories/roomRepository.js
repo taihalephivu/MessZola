@@ -26,6 +26,10 @@ class RoomRepository {
     this.db.run(`DELETE FROM room_members WHERE room_id = ? AND user_id = ?`, [roomId, userId]);
   }
 
+  removeAllMembers(roomId) {
+    this.db.run(`DELETE FROM room_members WHERE room_id = ?`, [roomId]);
+  }
+
   listRoomsForUser(userId) {
     return this.db.all(
       `SELECT r.*, GROUP_CONCAT(m.user_id) as members FROM rooms r
@@ -34,6 +38,17 @@ class RoomRepository {
        GROUP BY r.id
        ORDER BY r.created_at DESC`,
       [userId]
+    );
+  }
+
+  getRoomWithMembers(roomId) {
+    return this.db.get(
+      `SELECT r.*, GROUP_CONCAT(m.user_id) as members
+       FROM rooms r
+       JOIN room_members m ON m.room_id = r.id
+       WHERE r.id = ?
+       GROUP BY r.id`,
+      [roomId]
     );
   }
 
@@ -63,6 +78,16 @@ class RoomRepository {
   rename(roomId, name) {
     this.db.run(`UPDATE rooms SET name = ? WHERE id = ?`, [name, roomId]);
     return this.getRoom(roomId);
+  }
+
+  deleteRoom(roomId) {
+    this.db.run(
+      `DELETE FROM files WHERE message_id IN (SELECT id FROM messages WHERE room_id = ?)` ,
+      [roomId]
+    );
+    this.db.run(`DELETE FROM messages WHERE room_id = ?`, [roomId]);
+    this.removeAllMembers(roomId);
+    this.db.run(`DELETE FROM rooms WHERE id = ?`, [roomId]);
   }
 }
 

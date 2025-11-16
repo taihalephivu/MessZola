@@ -135,6 +135,8 @@ export class ChatPanel {
     this.root.style.display = 'flex';
     
     const room = state.rooms.find((r) => r.id === state.currentRoomId);
+    const avatarEl = this.chatAvatar;
+    const baseAvatarClass = 'chat-header-avatar sidebar-avatar';
     if (room) {
       // Get friend info for direct chat
       let friendName = room.name;
@@ -156,14 +158,17 @@ export class ChatPanel {
       // Update header with room/friend info
       this.chatName.textContent = friendName;
       
+      avatarEl.className = baseAvatarClass;
       // Update avatar
       if (friendAvatar) {
-        this.chatAvatar.innerHTML = `<img src="${friendAvatar}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
+        avatarEl.innerHTML = `<img src="${friendAvatar}" alt="${this.escape(friendName)}" />`;
       } else {
-        this.chatAvatar.textContent = initial;
+        avatarEl.textContent = initial;
       }
+      avatarEl.classList.remove('online', 'offline', 'group');
       
       if (room.is_group) {
+        avatarEl.classList.add('group');
         const members = room.members ? room.members.split(',').length : 0;
         this.chatStatus.textContent = `${members} thành viên`;
       } else {
@@ -171,13 +176,17 @@ export class ChatPanel {
         const memberIds = room.members.split(',');
         const friendId = memberIds.find(id => id !== state.user?.id);
         const isOnline = this.store.isUserOnline(friendId);
+        if (friendId) {
+          avatarEl.classList.add(isOnline ? 'online' : 'offline');
+        }
         this.chatStatus.textContent = isOnline ? 'Đang hoạt động' : 'Ngoại tuyến';
       }
     } else {
       // No room selected
       this.chatName.textContent = 'Chọn một cuộc trò chuyện';
       this.chatStatus.textContent = 'Chọn từ danh sách bên trái';
-      this.chatAvatar.textContent = '💬';
+      avatarEl.className = baseAvatarClass;
+      avatarEl.textContent = '💬';
     }
     
     // Get messages and ensure they're sorted by timestamp
@@ -390,14 +399,18 @@ export class ChatPanel {
     return `
       <div class="chat-header">
         <div class="chat-header-info">
-          <div class="chat-header-avatar" data-chat-avatar>💬</div>
+          <div class="chat-header-avatar sidebar-avatar" data-chat-avatar>💬</div>
           <div class="chat-header-details">
             <h3 data-chat-name>Chọn một cuộc trò chuyện</h3>
             <p data-chat-status>Chọn từ danh sách bên trái</p>
           </div>
         </div>
         <div class="chat-header-actions">
-          <button type="button" data-call class="icon-btn" title="Gọi video">📹</button>
+          <button type="button" data-call class="icon-btn call-btn" title="Gọi video">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v1a3 3 0 01-3 3H4a3 3 0 01-3-3V8a3 3 0 013-3h8a3 3 0 013 3v2z" />
+            </svg>
+          </button>
           <button type="button" data-info class="icon-btn" title="Chi tiết">ℹ️</button>
         </div>
       </div>

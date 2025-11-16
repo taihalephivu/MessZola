@@ -26,6 +26,14 @@ class RoomUseCases {
   leaveGroup(roomId, userId) {
     return this.roomService.leaveGroup(roomId, userId);
   }
+
+  disband(roomId, ownerId) {
+    return this.roomService.disbandGroup(roomId, ownerId);
+  }
+
+  addMembers(roomId, ownerId, memberIds) {
+    return this.roomService.addMembers(roomId, ownerId, memberIds);
+  }
 }
 
 module.exports = RoomUseCases;
