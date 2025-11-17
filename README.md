@@ -48,11 +48,3 @@ Server mặc định lắng nghe tại http://localhost:4000 và phục vụ fro
 3. **Chat**: danh sách phòng (`/rooms`) hiển thị ở sidebar. Khi chọn phòng, client tải lịch sử `/rooms/:id/messages` và giữ kết nối WS. Mỗi thông điệp mới → WS gửi sự kiện `send`, backend lưu vào DB và broadcast qua EventBus. Danh sách tin nhắn trên UI có virtualization (chỉ render tối đa 200 bản ghi gần nhất).
 4. **Call**: nút “Gọi video” trong phòng mở CallModal. Client lấy media stream, gửi `rtc-join` qua WS. Server dùng `RtcSignaler` broadcast peers, WS tiếp tục relay offer/answer/ICE. Tất cả camera được hiển thị trong lưới video; trạng thái mic/cam/share screen điều khiển qua `RtcClient`.
 5. **File**: upload thông qua `/files/upload` (REST + multer). Sau khi file lưu thành công, server tạo message `type=file`, lưu metadata vào bảng `files` và dùng EventBus đẩy thông điệp đến toàn bộ thành viên phòng. UI hiển thị chip file và cho phép tải xuống.
-
-## Lưu ý thiết kế
-
-- sql.js chạy trong Node và ghi lại snapshot DB vào `server/data/messzola.sqlite` để giữ dữ liệu.
-- Kiến trúc module feature-first, mỗi feature có REST route và/hoặc WS handler riêng.
-- WebSocket tự động reconnect, sử dụng token Bearer trong querystring.
-- WebRTC cấu hình STUN Google, có nút tắt/bật mic, cam và chia sẻ màn hình.
-- Giao diện bố cục AppShell (Sidebar + Header + Content) + Soft UI (bóng mềm, radius 14px, màu #6D83F2 & #F29D52).
