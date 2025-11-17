@@ -31,6 +31,16 @@ npm start
 
 Server mặc định lắng nghe tại http://localhost:4000 và phục vụ frontend từ thư mục `web/`.
 
+## Chức năng chính
+
+- **Đăng nhập/đăng ký** bằng số điện thoại, giữ phiên bằng JWT.
+- **Quản lý bạn bè**: tìm kiếm, gửi lời mời, xem trạng thái online/offline.
+- **Chat 1-1 và nhóm** với lịch sử tin nhắn, call history và typing indicator.
+- **Quản trị nhóm**: tạo nhóm, đổi tên, mời thêm bạn, rời hoặc giải tán nhóm.
+- **Gửi file**: kéo/thả hoặc chọn file để gửi ngay trong khung chat.
+- **Gọi video** nhiều người với bật/tắt mic, camera, chia sẻ màn hình.
+- **Tối ưu UX**: cache dữ liệu cục bộ, tự reconnect WS, giữ nguyên tab khi F5.
+
 ## Luồng dữ liệu chính
 
 1. **Auth**: người dùng đăng ký/đăng nhập bằng số điện thoại + mật khẩu. Backend sử dụng bcrypt + JWT. Token được lưu trên client và gắn vào REST + WS.
